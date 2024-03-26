@@ -1,0 +1,35 @@
+version: '3.4'
+
+services:
+  flaskapp:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./app:/app
+
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+    # - DATABASE_HOST=127.0.0.1
+      - POSTGRES_USER=marta
+      - POSTGRES_PASSWORD=maniro12
+      - POSTGRES_DB=GasWiseDB
+    volumes:
+      - /home/marta/Documentos/GasWise_Proyecto/pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata: 
