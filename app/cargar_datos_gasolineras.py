@@ -71,14 +71,17 @@ def insertar_Gasolinera_BD(id, tipo_venta, horario, margen):
 
 def insertar_SuministraGasolinera_BD(id_distribuidora, id_combustible, precio):
     conn, cur = conectar_BD()
-    cur.execute(
-        """INSERT INTO public."SuministraGasolinera" ("IdDistribuidora", "IdCombustible", "Precio")
-        VALUES (%s, %s, %s);""",
-        (id_distribuidora, id_combustible, precio)
-        )  
-    conn.commit()  
-
-    desconectar_BD(cur, conn)
+    try:
+        cur.execute(
+            """INSERT INTO public."SuministraGasolinera" ("IdDistribuidora", "IdCombustible", "Precio")
+            VALUES (%s, %s, %s);""",
+            (id_distribuidora, id_combustible, helpers.to_float(precio))
+            )  
+        conn.commit()
+    except psycopg2.IntegrityError:
+        conn.rollback()  
+    finally:
+        desconectar_BD(cur, conn)
 
     return "Datos insertados correctamente en la tabla SuministraGasolinera"
 
@@ -87,25 +90,29 @@ def obtener_ID_distribuidora(ideess):
     cur.execute(
         """SELECT "IdDistribuidora" FROM public."Distribuidora"
         WHERE "IDEESS" = %s;""",
-        (ideess)
+        (ideess,)
     )
     result = cur.fetchone()
     desconectar_BD(cur, conn)
+
     if len(result)==1:
-        return result
+        return result[0]
     else:
         return None
+    
     
 def obtener_ID_combustible(combustible):
     conn, cur = conectar_BD()
     cur.execute(
         """SELECT "IdCombustible" FROM public."TipoCombustible"
         WHERE "Nombre" = %s;""",
-        (combustible)
+        (combustible,)
     )
     result = cur.fetchone()
     desconectar_BD(cur, conn)
+    
     if len(result)==1:
-        return result
+        return result[0]
     else:
         return None
+    #return result[0] if len(result) == 1 else None
