@@ -37,95 +37,7 @@ def obtener_datos():
     except requests.RequestException as e:
         return jsonify({'error': str(e)}), 500
 
-# Carga los datos del archivo JSON y los devuelve como respuesta
-@app.route('/cargar_datos', methods=['GET'])
-def cargar_datos():
-    try:
-        # Abre el archivo JSON para leer los datos
-        with open('app/datos_carburantes.json', 'r', encoding='utf-8') as archivo:
-            datos = json.load(archivo)
-        
-        # Extrae la lista de estaciones de servicio
-        lista_estaciones = datos["ListaEESSPrecio"]
-
-        for estacion in lista_estaciones:
-            nombre = estacion["R\u00f3tulo"]
-
-        # Devuelve la lista procesada como respuesta JSON
-        return nombre
-    
-    except FileNotFoundError:
-        return jsonify({"error": "Archivo no encontrado"}), 404
-    except json.JSONDecodeError:
-        return jsonify({"error": "Error al decodificar el JSON"}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Inserta datos en la base de datos
-@app.route('/insertar_BD', methods=['GET'])
-def insertar_BD():
-    try:
-        # Conexión a la base de datos
-        conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")
-        cur = conn.cursor()
-        cur.execute(
-            """INSERT INTO public."Distribuidora" ("Nombre", "Latitud", "Longitud", "MailPropietario")
-            VALUES ('LOLA', 39.211417, -1.539167, NULL);"""
-            )  
-        conn.commit()  # Confirma los cambios en la base de datos
-
-        cur.close()
-        conn.close()
-
-        return "Datos insertados correctamente"
-    except psycopg2.Error as e:
-        return {"error": str(e)}, 500
-    except Exception as e:
-        return {"error": str(e)}, 500
-
-# Carga los datos del archivo JSON en la base de datos
-@app.route('/cargar_datos_BD', methods=['GET'])
-def cargar_datos_BD():
-    try:
-        # Abre el archivo JSON para leer los datos
-        with open('app/datos_carburantes.json', 'r', encoding='utf-8') as archivo:
-            datos = json.load(archivo)
-        
-        # Conexión a la base de datos
-        conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")
-        cur = conn.cursor()
-        
-        # Extrae la lista de estaciones de servicio
-        lista_estaciones = datos["ListaEESSPrecio"]
-
-        for estacion in lista_estaciones:
-            nombre = estacion["R\u00f3tulo"]
-            
-            # Inserta o actualiza el horario en la base de datos para cada estación
-            cur.execute(
-                """INSERT INTO public."Distribuidora" ("Nombre", "Latitud", "Longitud", "MailPropietario")
-                VALUES (%s, %s, %s, %s);
-                """,
-                (nombre, 39.211417, -1.539167, None)
-            )
-
-        conn.commit()  # Confirma los cambios en la base de datos
-        
-        # Cierra la conexión
-        cur.close()
-        conn.close()
-
-        return jsonify({"mensaje": "Datos cargados correctamente"})
-    
-    except FileNotFoundError:
-        return jsonify({"error": "Archivo no encontrado"}), 404
-    except json.JSONDecodeError:
-        return jsonify({"error": "Error al decodificar el JSON"}), 500
-    except psycopg2.Error as e:
-        return jsonify({"error": str(e)}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+#Carga los datos de la ubicacion de las gasolineras en la base de datos    
 @app.route('/cargar_datos_BD_ubicacion', methods=['GET'])
 def cargar_datos_BD_ubicacion():
     try:
@@ -246,8 +158,11 @@ def cargar_datos_BD_precios():
         return str(e), 500
     except Exception as e:
         return str(e), 500
-    
+
+############################################################################################################ 
 #ESTACIONES DE RECARGA
+############################################################################################################
+    
 # Obtiene datos de la API de Gasolineras y los guarda en un archivo JSON
 @app.route('/get_info_EV_stations', methods=['GET'])
 def get_info_EV_stations():
@@ -268,8 +183,11 @@ def get_info_EV_stations():
         return 'Datos guardados correctamente en data_EV_stations.json'
 
     except requests.RequestException as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500   
 
+#Carga los datos de la ubicacion de las gasolineras en la base de datos    
+@app.route('/insert_location_data_BD_EV', methods=['GET'])
+#añadir llamda al metodo de cargar datos de la ubicacion de cargar_datos_EV.py
 
 
 if __name__ == '__main__':

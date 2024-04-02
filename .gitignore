@@ -1,2 +1,4 @@
 pgdata
 venv
+app/data_EV_stations.json
+app/datos_carburantes.json
