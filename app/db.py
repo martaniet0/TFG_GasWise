@@ -138,7 +138,7 @@ def get_distributor_ID(idApi):
             (idApi,)
         )
         result = cur.fetchone()
-        return result[0] if len(result) == 1 else None
+        return result[0] if result is not None and len(result) == 1 else None
     
     except psycopg2.Error as e:
         print(f"Error al obtener datos de la BD: {e}")

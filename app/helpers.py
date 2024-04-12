@@ -38,3 +38,9 @@ def extract_usage_cost_EV():
     except Exception as e:
         return {"error": str(e)}, 500
 
+#Get the dictionary key based on the value
+def get_key(val, dic):
+    for key, value in dic.items():
+         if val == value:
+             return key
+    return None

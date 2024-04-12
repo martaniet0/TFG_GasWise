@@ -24,13 +24,6 @@ connector_type = {
     16: "Blue Commando (2P+E)"
 }
 
-#Get the dictionary key based on the value
-def get_key(val):
-    for key, value in connector_type.items():
-         if val == value:
-             return key
-    return None
-
 # Get EV stations data from the API and save it in a JSON file
 def get_info_EV_stations():
     #!!!info sensible: API key
@@ -73,7 +66,7 @@ def insert_EV_station_location_data():
         provincia = None
         municipio = None
         localidad = None
-        cp = address_info.get("Postcode") if len(address_info.get("Postcode")) == 5 else None
+        cp = address_info.get("Postcode") if address_info.get("Postcode") is not None and len(address_info.get("Postcode")) == 5 else None
         direccion = address_info.get("AddressLine1")
 
         db.insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, cp, direccion)
@@ -102,9 +95,9 @@ def insert_EV_station_data():
         id = db.get_distributor_ID(str(idApi))
         usage_info = station.get("UsageType", {})
         precio = station.get("UsageCost")
-        tipo_venta = usage_info.get("Title")
-        
-        db.insert_station_EV_data_BD(id, tipo_venta, precio)
+        tipo_venta = usage_info.get("Title") if usage_info is not None else None
+        if id is not None:
+            db.insert_station_EV_data_BD(id, tipo_venta, precio)
 
 #Insert EV station supply data into the database 
 def insert_EV_station_supply_data():
@@ -114,17 +107,19 @@ def insert_EV_station_supply_data():
         id_distribuidora = db.get_distributor_ID(str(idApi))
         connections = station.get("Connections", [])
         
-        for connection in connections:
-            id_punto = get_key(connection["ConnectionType"]["Title"]) if "ConnectionType" in connection and "Title" in connection["ConnectionType"] else None
-            
-            if id_punto is not None:
-                cantidad = connection.get("Quantity", 0)
-                voltaje = connection.get("Voltage", 0)
-                amperios = connection.get("Amps", 0)
-                kW = connection.get("PowerKW", 0)
-                carga_rapida = connection["Level"]["IsFastChargeCapable"] if "Level" in connection and "IsFastChargeCapable" in connection["Level"] else False
-
-                with open('/app/log.txt', 'a') as file:
-                    file.write(f"ID Distribuidora: {id_distribuidora}, ID Punto: {id_punto}, Carga rápida: {carga_rapida}, Cantidad: {cantidad}, Voltaje: {voltaje}, Amperios: {amperios}, kW: {kW}\n")
+        if id_distribuidora is not None:
+            for connection in connections:
+                id_punto = helpers.get_key(connection["ConnectionType"]["Title"], connector_type) if "ConnectionType" in connection and "Title" in connection["ConnectionType"] else None
                 
-                db.insert_station_EV_supply_data_BD(id_distribuidora, id_punto, carga_rapida, cantidad, voltaje, amperios, kW)
+                if id_punto is not None:
+                    cantidad = connection.get("Quantity", 0)
+                    voltaje = connection.get("Voltage", 0)
+                    amperios = connection.get("Amps", 0)
+                    kW = connection.get("PowerKW", 0)
+                    if connection is not None and connection.get("Level") is not None:
+                        carga_rapida = connection["Level"].get("IsFastChargeCapable")
+                    else:
+                        carga_rapida = None
+
+
+                    db.insert_station_EV_supply_data_BD(id_distribuidora, id_punto, carga_rapida, cantidad, voltaje, amperios, kW)

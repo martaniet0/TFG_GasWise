@@ -53,13 +53,13 @@ def open_file_gas_stations():
     except Exception as e:
         return f"Error inesperado: {e}", 500
 
-# Insert location data of an EV station into the database
+# Insert location data of an gas station into the database
 def insert_gas_station_location_data():
     data = open_file_gas_stations()   
 
-    lista_estaciones = data["ListaEESSPrecio"]
+    stations_list = data["ListaEESSPrecio"]
 
-    for estacion in lista_estaciones:
+    for estacion in stations_list:
         cp = estacion["C.P."]
         direccion = estacion["Direcci\u00f3n"]
         latitud = estacion["Latitud"]
@@ -71,83 +71,61 @@ def insert_gas_station_location_data():
         db.insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, cp, direccion)
 
     
-def insertar_Distribuidora_BD(nombre, latitud, longitud, mail, idApi):
-    conn, cur = db.conectar_BD()
-    try:
-        cur.execute(
-            """INSERT INTO public."Distribuidora" ("Nombre", "Latitud", "Longitud", "MailPropietario", "IdAPI")
-            VALUES (%s, %s, %s, %s, %s);""",
-            (nombre, helpers.to_float(latitud), helpers.to_float(longitud), mail, idApi)
-        )  
-        conn.commit()  
-    except psycopg2.IntegrityError:
-        conn.rollback()
-    finally:
-        db.desconectar_BD(cur, conn)
+# Insert distributor data of an gas station into the database 
+def insert_gas_station_distributor_data():
+    data = open_file_gas_stations()
 
-    return "Datos insertados correctamente en la tabla Distribuidora"
+    stations_list = data["ListaEESSPrecio"]
+
+    for station in stations_list:
+        nombre= station["R\u00f3tulo"]
+        latitud = station["Latitud"]
+        longitud = station["Longitud (WGS84)"]
+        mail = None
+        idApi = station["IDEESS"]
+
+        db.insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi)
+
+# Insert gas station data into the database   
+def insert_gas_station_data():
+    data = open_file_gas_stations()
+
+    stations_list = data["ListaEESSPrecio"]
+
+    for station in stations_list:
+        idApi = station["IDEESS"]
+        id = db.get_distributor_ID(str(idApi))
+        if station["Tipo Venta"] == 'P':
+            tipo_venta = True
+        elif station["Tipo Venta"] == 'R':
+            tipo_venta = False
+        else:
+            tipo_venta = None
+        horario = station["Horario"]
+        margen = station["Margen"]
     
-def insertar_Gasolinera_BD(id, tipo_venta, horario, margen):
-    conn, cur = db.conectar_BD()
-    try: 
-        cur.execute(
-            """INSERT INTO public."Gasolinera" ("IdDistribuidora", "TipoVenta", "Horario", "Margen")
-            VALUES (%s, %s, %s, %s);""",
-            (id, tipo_venta, horario, margen)
-            )  
-        conn.commit()
-    except psycopg2.IntegrityError:
-        conn.rollback()  
-    finally:
-        db.desconectar_BD(cur, conn)
+        db.insert_gas_station_data_BD(id, tipo_venta, horario, margen)
+    
+#Insert gas station supply data into the database 
+def insert_gas_station_supply_data():
+    data = open_file_gas_stations()  
 
-    return "Datos insertados correctamente en la tabla Gasolinera"
+    stations_list = data["ListaEESSPrecio"]
 
-def insertar_SuministraGasolinera_BD(id_distribuidora, id_combustible, precio):
-    conn, cur = db.conectar_BD()
-    try:
-        cur.execute(
-            """INSERT INTO public."SuministraGasolinera" ("IdDistribuidora", "IdCombustible", "Precio")
-            VALUES (%s, %s, %s);""",
-            (id_distribuidora, id_combustible, helpers.to_float(precio))
-            )  
-        conn.commit()
-    except psycopg2.IntegrityError:
-        conn.rollback()  
-    finally:
-        db.desconectar_BD(cur, conn)
+    for station in stations_list:
+        idApi = station["IDEESS"]
+        id_distribuidora = db.get_distributor_ID(str(idApi))
+        i=1
+        for combustible in gas_type.values():
+            id_combustible = helpers.get_key(combustible, gas_type)
+            precio = station["Precio {}".format(combustible)] if station["Precio {}".format(combustible)] != '' else 0.0
+            if precio != 0.0:
+                db.insert_gas_station_supply_data_BD(id_distribuidora, id_combustible, precio)
+            i+=1
+                
 
-    return "Datos insertados correctamente en la tabla SuministraGasolinera"
 
-def obtener_ID_distribuidora(idApi):
-    conn, cur = db.conectar_BD()
-    cur.execute(
-        """SELECT "IdDistribuidora" FROM public."Distribuidora"
-        WHERE "IdAPI" = %s;""",
-        (idApi,)
-    )
-    result = cur.fetchone()
-    db.desconectar_BD(cur, conn)
-
-    if len(result)==1:
-        return result[0]
-    else:
-        return None
     
     
-def obtener_ID_combustible(combustible):
-    conn, cur = db.conectar_BD()
-    cur.execute(
-        """SELECT "IdCombustible" FROM public."TipoCombustible"
-        WHERE "Nombre" = %s;""",
-        (combustible,)
-    )
-    result = cur.fetchone()
-    db.desconectar_BD(cur, conn)
-    
-    if len(result)==1:
-        return result[0]
-    else:
-        return None
-    #return result[0] if len(result) == 1 else None
+
     
