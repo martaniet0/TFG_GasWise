@@ -1,5 +1,1 @@
-ID Distribuidora: 37451, ID Punto: 1, Carga rápida: True, Cantidad: 1, Voltaje: 400, Amperios: 125, kW: 50
-ID Distribuidora: 37451, ID Punto: 2, Carga rápida: True, Cantidad: 1, Voltaje: 400, Amperios: 125, kW: 50
-ID Distribuidora: 37452, ID Punto: 1, Carga rápida: True, Cantidad: 1, Voltaje: 400, Amperios: 125, kW: 50
-ID Distribuidora: 37452, ID Punto: 2, Carga rápida: True, Cantidad: 1, Voltaje: 400, Amperios: 125, kW: 50
-ID Distribuidora: 37453, ID Punto: 1, Carga rápida: True, Cantidad: 2, Voltaje: 920, Amperios: 375, kW: 150
+Aqui llegaAqui llegaAqui llega 2Aqui llega 3Aqui llegaAqui llega 2Aqui llega 3Aqui llegaAqui llega 2Aqui llega 3

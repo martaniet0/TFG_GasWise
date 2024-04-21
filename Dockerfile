@@ -18,4 +18,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 4000
 
 # Establecer el comando para iniciar la aplicación
-CMD ["python", "./app/app.py"]
+CMD ["python", "./app/routes.py"]
+

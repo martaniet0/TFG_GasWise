@@ -34,10 +34,8 @@ def get_info_gas_stations():
         with open('/app/data_gas_stations.json', 'w') as archivo:
             json.dump(datos, archivo, indent=4)
 
-        return 'Datos guardados correctamente en data_gas_stations.json'
-
     except requests.RequestException as e:
-        return f"Error inesperado: {e}", 500   
+        return f"Error al intentar obtener los datos de las gasolineras: {e}", 500   
 
 #Open JSON file with data of gas stations
 def open_file_gas_stations():
@@ -68,7 +66,7 @@ def insert_gas_station_location_data():
         municipio = estacion["Municipio"]
         provincia = estacion["Provincia"]
 
-        db.insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, cp, direccion)
+        db.insert_location_data_BD2(longitud, latitud, provincia, municipio, localidad, cp, direccion) ###!!!
 
     
 # Insert distributor data of an gas station into the database 

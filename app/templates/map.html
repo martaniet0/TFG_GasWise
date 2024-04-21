@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa y Ruta con OpenStreetMap y OSRM</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <style>
+        #map {
+            height: 100vh;
+        }
+
+        .route-form {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="route-form">
+            <label for="origin">Origen:</label>
+            <input type="text" id="origin" placeholder="Introduce origen" />
+            <label for="destination">Destino:</label>
+            <input type="text" id="destination" placeholder="Introduce destino" />
+            <button onclick="fetchAndDisplayRoute()">Buscar ruta</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="map"></section>
+    </main>
+
+    <!--library for map visualization-->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!--script for route search-->
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+</body>
+
+</html>

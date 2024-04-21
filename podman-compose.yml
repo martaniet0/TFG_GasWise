@@ -9,7 +9,7 @@ services:
       - ./app:/app
 
   postgres:
-    image: postgres
+    image: postgis/postgis
     restart: always
     ports:
       - "5432:5432"

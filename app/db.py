@@ -1,5 +1,8 @@
 import psycopg2
 import helpers
+import distributor_search.search as search
+import json
+import re
 
 ############################################################################################################
 #CONNECTION AND DISCONNECTION TO THE DB
@@ -43,6 +46,23 @@ def insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, 
         conn.rollback()
     finally:
         disconnect_BD(cur, conn)
+
+# !!!Gas station and EV: Insert location data into the database  
+def insert_location_data_BD2(longitud, latitud, provincia, municipio, localidad, cp, direccion):
+    conn, cur = connect_BD()
+    try:
+        cur.execute(
+            """INSERT INTO public."Prueba_ubicacion" ("location")
+            VALUES (ST_MakePoint(%s, %s)::geography)""",
+            (helpers.to_float(longitud), helpers.to_float(latitud))
+        )        
+        conn.commit()
+    except psycopg2.Error as e:
+        print(f"Error al insertar en la BD: {e}")
+        conn.rollback()
+    finally:
+        disconnect_BD(cur, conn)
+
 
 # Gas station and EV: Insert distributor data into the database
 def insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi):
@@ -144,3 +164,43 @@ def get_distributor_ID(idApi):
         print(f"Error al obtener datos de la BD: {e}")
     finally:
         disconnect_BD(cur, conn)
+
+# Get gas stations and EV stations in a given route
+#!!! Devuelve las coordenadas en orden contrario!!! 
+def get_route_distributors():
+    conn, cur = connect_BD()
+    # Crear la consulta SQL
+    puntos_sql = search.get_route_array()
+    puntos_str = ',\n      '.join(puntos_sql)
+    query = f"""
+    WITH ruta AS (
+      SELECT ST_Buffer(ST_MakeLine(ARRAY[{puntos_str}])::geography, 2000) AS geom
+    )
+    SELECT ST_AsText(g.location)
+    FROM public."Prueba_ubicacion" g, ruta r
+    WHERE ST_DWithin(g.location::geography, r.geom, 0);
+    """
+
+    try:
+        cur.execute(query)
+        results = cur.fetchall()
+        coordinates_list = []
+        for result in results:
+            # Extraer coordenadas usando regex
+            coords = re.findall(r"[-\d\.]+", result[0])
+            if coords:
+                # Agregar como lista de flotantes [latitud, longitud]
+                coordinates_list.append([float(coords[1]), float(coords[0])])
+
+        # Preparar el diccionario con la clave "coordinates"
+        coordinates_dict = {"coordinates": coordinates_list}
+
+        # Escribe el diccionario de coordenadas en un archivo JSON
+        with open('/app/distributor_search/route_distributors.json', 'w') as file:
+            json.dump(coordinates_dict, file, indent=4)
+    except psycopg2.Error as e:
+        print(f"Error al buscar las distribuidoras en la ruta: {e}")
+    finally:
+        disconnect_BD(cur, conn)
+
+
