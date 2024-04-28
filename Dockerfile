@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
 
 # Copiar los archivos de requisitos y el proyecto al contenedor
 COPY requirements.txt ./
-COPY app ./app
+COPY app /app
+COPY run.py /run.py
 
 # Instalar las dependencias del proyecto
 RUN pip install --no-cache-dir -r requirements.txt
@@ -18,5 +19,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 4000
 
 # Establecer el comando para iniciar la aplicación
-CMD ["python", "./app/routes.py"]
+CMD ["python", "./run.py"] 
 

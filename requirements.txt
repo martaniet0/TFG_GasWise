@@ -1,3 +1,8 @@
 Flask==3.0.2
 requests==2.27.1
 psycopg2==2.9.3
+Flask-SQLAlchemy==3.0.2
+sqlalchemy>=1.4
+geoalchemy2==0.15.0
+shapely==1.7.1
+
