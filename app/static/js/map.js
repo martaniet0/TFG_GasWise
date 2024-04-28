@@ -49,8 +49,9 @@ function displayDistributor(data) {
         marker.on('click', function(e) {
             var lat= e.latlng.lat;
             var lon= e.latlng.lng;
-            var url = '/get_distributor_info';
+            var url = '/search/get_distributor_info/' + lat + '/' + lon;
 
+            //jQuery to make an AJAX request to the server
             $.get(url, function(response) {
                 marker.bindPopup(response).openPopup();
             });
@@ -74,7 +75,7 @@ function fetchAndDisplayRoute() {
     }
 
     // Append the parameters to the URL
-    const url = new URL('/get_route_with_distributors', window.location.origin);
+    const url = new URL('/search/get_route_with_distributors', window.location.origin);
     url.searchParams.append('origin', origin);
     url.searchParams.append('destination', destination);
 

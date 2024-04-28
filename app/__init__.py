@@ -9,11 +9,17 @@ def create_app():
 
     db.init_app(app)
 
-    # Importar aquí para evitar importaciones cíclicas
-    from .routes import init_routes
-    init_routes(app)
+    # Aquí para evitar importaciones cíclicas
+    #from .routes import init_routes
+    #init_routes(app)
 
-    from .views.search import init_search
-    init_search(app)
+    #from .views.search import init_search
+    #init_search(app)
+
+    from app.routes import routes_bp
+    from .views.search import search_bp
+
+    app.register_blueprint(routes_bp, url_prefix='/routes')
+    app.register_blueprint(search_bp, url_prefix='/search')
 
     return app

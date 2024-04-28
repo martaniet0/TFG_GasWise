@@ -1,9 +1,10 @@
-from flask import request, jsonify
+from flask import request, jsonify, Blueprint
 
 import app.views.database as db
 import json
 import requests
 
+search_bp = Blueprint('search', __name__)
 
 #Habría que hacer una función para guardar datos en json de la ruta
 
@@ -98,47 +99,46 @@ def check_route_on_water(origin_lat, origin_lon, destination_lat, destination_lo
         print(str(e))
         return None  # or raise an error
 
-def init_search(app):
-    @app.route('/get_route_with_distributors')
-    def get_route_with_distributors():
-        origin = request.args.get('origin')
-        destination = request.args.get('destination')
+#def init_search(app):
+@search_bp.route('/get_route_with_distributors')
+def get_route_with_distributors():
+    origin = request.args.get('origin')
+    destination = request.args.get('destination')
 
-        if not origin or not destination:
-            return "Se deben proporcionar origen y destino", 400
+    if not origin or not destination:
+        return "Se deben proporcionar origen y destino", 400
 
-        origin_coordinates = get_coordinates(origin)
-        destination_coordinates = get_coordinates(destination)
+    origin_coordinates = get_coordinates(origin)
+    destination_coordinates = get_coordinates(destination)
 
-        if not origin_coordinates or not destination_coordinates:
-            return "No se encontraron coordenadas para los puntos proporcionados", 400
+    if not origin_coordinates or not destination_coordinates:
+        return "No se encontraron coordenadas para los puntos proporcionados", 400
 
-        origin_country = get_country(*origin_coordinates)
-        destination_country = get_country(*destination_coordinates)
+    origin_country = get_country(*origin_coordinates)
+    destination_country = get_country(*destination_coordinates)
 
-        if origin_country != 'es' or destination_country != 'es':
-            return "Solo se permiten rutas en España", 400
-        
-        water_route = check_route_on_water(*origin_coordinates, *destination_coordinates)
-        if water_route:
-            return "La ruta no puede ser sobre el agua", 400
+    if origin_country != 'es' or destination_country != 'es':
+        return "Solo se permiten rutas en España", 400
+    
+    water_route = check_route_on_water(*origin_coordinates, *destination_coordinates)
+    if water_route:
+        return "La ruta no puede ser sobre el agua", 400
 
-        get_info_route_coordinates(*origin_coordinates, *destination_coordinates)
-        db.get_route_distributors()
+    get_info_route_coordinates(*origin_coordinates, *destination_coordinates)
+    db.get_route_distributors()
 
-        try:
-            with open('app/json_data/route_coordinates.json', 'r') as file:
-                route = json.load(file)
-            with open('app/json_data/route_distributors.json', 'r') as file:
-                distributors = json.load(file)
+    try:
+        with open('app/json_data/route_coordinates.json', 'r') as file:
+            route = json.load(file)
+        with open('app/json_data/route_distributors.json', 'r') as file:
+            distributors = json.load(file)
 
-            json_data = json.dumps({'route': route, 'distributors': distributors})
+        json_data = json.dumps({'route': route, 'distributors': distributors})
 
-            return json_data
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-        
-    @app.route('/get_distributor_info')
-    def get_distributor_info():
-        #return f"Latitud: {lat}, Longitud: {lon}"
-        return "hola mundo"
+        return json_data
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@search_bp.route('/get_distributor_info/<lat>/<lon>')
+def get_distributor_info(lat,lon):
+    return f"Latitud: {lat}, Longitud: {lon}"
