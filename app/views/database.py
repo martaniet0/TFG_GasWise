@@ -5,10 +5,15 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func
 from geoalchemy2 import functions as geo_func
 from contextlib import contextmanager
+from sqlalchemy.exc import IntegrityError
+from geoalchemy2 import Geography, WKTElement
 
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, PruebaUbicacion
+
+
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga
 
 import app.views.search as search
+import app.views.helpers as helpers
 
 import psycopg2
 import json
@@ -35,109 +40,113 @@ def session_scope():
 # INSERT DATA INTO THE DB USING SQLALCHEMY
 ############################################################################################################
 
+# Gas station and EV: Insert location data into the database  
 def insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, cp, direccion):
     with session_scope() as session:
-        new_location = Ubicacion(
-            Longitud=longitud,
-            Latitud=latitud,
-            Provincia=provincia,
-            Municipio=municipio,
-            Localidad=localidad,
-            CP=cp,
-            Direccion=direccion
-        )
-        session.add(new_location)
+        try:
+            new_location = Ubicacion(
+                Provincia=provincia,
+                Municipio=municipio,
+                Localidad=localidad,
+                CP=cp,
+                Direccion=direccion,
+                Location=f'SRID=4326;POINT({helpers.to_float(longitud)} {helpers.to_float(latitud)})'
+            )
+            session.add(new_location)
+            session.commit()
+        except IntegrityError:
+            session.rollback()  
 
-def insert_location_data_BD2(longitud, latitud):
+# Gas station and EV: Insert distributor data into the database
+def insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi, tipo):
     with session_scope() as session:
-        # Create a Point object using Shapely and insert it into the location column
-        new_location = PruebaUbicacion(location=f'SRID=4326;POINT({longitud} {latitud})')
-        session.add(new_location)
+        try:
+            new_distributor = Distribuidora(
+                Nombre=nombre,
+                MailPropietario=mail,
+                IdAPI=idApi,
+                Location=f'SRID=4326;POINT({helpers.to_float(longitud)} {helpers.to_float(latitud)})',
+                Tipo=tipo
+            )
+            session.add(new_distributor)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
-def insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi):
-    with session_scope() as session:
-        new_distributor = Distribuidora(
-            Nombre=nombre,
-            Latitud=latitud,
-            Longitud=longitud,
-            MailPropietario=mail,
-            IdAPI=idApi
-        )
-        session.add(new_distributor)
-
+# Gas station: Insert gas station data into the database
 def insert_gas_station_data_BD(id, tipo_venta, horario, margen):
     with session_scope() as session:
-        new_gas_station = Gasolinera(
-            IdDistribuidora=id,
-            TipoVenta=tipo_venta,
-            Horario=horario,
-            Margen=margen
-        )
-        session.add(new_gas_station)
+        try:
+            new_gas_station = Gasolinera(
+                IdDistribuidora=id,
+                TipoVenta=tipo_venta,
+                Horario=horario,
+                Margen=margen
+            )
+            session.add(new_gas_station)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
+#EV: Insert EV station data into the database
 def insert_station_EV_data_BD(id, tipo_venta, precio):
     with session_scope() as session:
-        new_ev_station = EstacionRecarga(
-            IdDistribuidora=id,
-            TipoVenta=tipo_venta,
-            Precio=precio
-        )
-        session.add(new_ev_station)
+        try:
+            new_ev_station = EstacionRecarga(
+                IdDistribuidora=id,
+                TipoVenta=tipo_venta,
+                Precio=precio
+            )
+            session.add(new_ev_station)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
+# Gas station: Insert gas station supply data into the database
 def insert_gas_station_supply_data_BD(id_distribuidora, id_combustible, precio):
     with session_scope() as session:
-        new_supply = SuministraGasolinera(
-            IdDistribuidora=id_distribuidora,
-            IdCombustible=id_combustible,
-            Precio=precio
-        )
-        session.add(new_supply)
+        try:
+            new_supply = SuministraGasolinera(
+                IdDistribuidora=id_distribuidora,
+                IdCombustible=id_combustible,
+                Precio=helpers.to_float(precio)
+            )
+            session.add(new_supply)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
+# EV: Insert EV station supply data into the database
 def insert_station_EV_supply_data_BD(id_distribuidora, id_punto, carga_rapida, cantidad, voltaje, amperios, kW):
     with session_scope() as session:
-        new_ev_supply = SuministraEstacionRecarga(
-            IdDistribuidora=id_distribuidora,
-            IdPunto=id_punto,
-            CargaRapida=carga_rapida,
-            Cantidad=cantidad,
-            Voltaje=voltaje,
-            Amperios=amperios,
-            kW=kW
-        )
-        session.add(new_ev_supply)
+        try:
+            new_ev_supply = SuministraEstacionRecarga(
+                IdDistribuidora=id_distribuidora,
+                IdPunto=id_punto,
+                CargaRapida=carga_rapida,
+                Cantidad=cantidad,
+                Voltaje=voltaje,
+                Amperios=amperios,
+                kW=kW
+            )
+            session.add(new_ev_supply)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
 
 ############################################################################################################
 # SELECT DATA FROM THE DB USING SQLALCHEMY
 ############################################################################################################
-
+# Gas station and EV : Get distributor ID
 def get_distributor_ID(idApi):
     with session_scope() as session:
         distributor = session.query(Distribuidora).filter_by(IdAPI=idApi).first()
         return distributor.IdDistribuidora if distributor else None
 
-"""
+#!!!Debo modificarlo para que busque en tabla Distribuidora y seleccione por tipo de distribuidora
+# Get gas stations and EV stations in a given route
 def get_route_distributors():
-    puntos_sql = search.get_route_array()  # This should return an array of `(long, lat)` tuples.
-    line = func.ST_MakeLine([func.ST_Point(lon, lat) for lon, lat in puntos_sql])
-    buffered_line = line.ST_Buffer(2000)  # Buffer by 2000 meters
-
-    query = Session.query(PruebaUbicacion.location.ST_AsText()).filter(
-        PruebaUbicacion.location.ST_DWithin(buffered_line, 0)
-    )
-
-    results = query.all()
-    coordinates_list = []
-
-    for result in results:
-        coords = re.findall(r"[-\d\.]+", result[0])
-        if coords:
-            coordinates_list.append([float(coords[1]), float(coords[0])])  # Append as [lat, lon]
-
-    coordinates_dict = {"coordinates": coordinates_list}
-    return coordinates_dict"""
-
-def get_route_distributors():
-    conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")
+    conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")#!!!
     cur = conn.cursor()
 
     # Crear la consulta SQL
@@ -147,9 +156,9 @@ def get_route_distributors():
     WITH ruta AS (
       SELECT ST_Buffer(ST_MakeLine(ARRAY[{puntos_str}])::geography, 2000) AS geom
     )
-    SELECT ST_AsText(g.location)
-    FROM public."Prueba_ubicacion" g, ruta r
-    WHERE ST_DWithin(g.location::geography, r.geom, 0);
+    SELECT ST_AsText(g."Location")
+    FROM public."Ubicacion" g, ruta r
+    WHERE ST_DWithin(g."Location"::geography, r.geom, 0);
     """
 
     try:
@@ -175,3 +184,31 @@ def get_route_distributors():
         cur.close()
         conn.close()
 
+#Get distributor info 
+#!!! Con SQL pq con GeoAlchemy no me sale
+def get_distributor_data(lat, lon):
+    conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")#!!!
+    cur = conn.cursor()
+
+    query = f"""
+    SELECT 
+    d."Nombre",
+    d."MailPropietario", 
+    d."Tipo"
+    FROM "Distribuidora" d
+    WHERE ST_Equals(d."Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry);
+    """
+
+    try:
+        cur.execute(query)
+        results = cur.fetchone()
+        if results:
+            return results 
+        else:
+            return None
+    except psycopg2.Error as e:
+        print(f"Error al extraer información de la distribuidora: {e}")
+        return None
+    finally:
+        cur.close()
+        conn.close()

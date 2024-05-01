@@ -66,7 +66,7 @@ def insert_gas_station_location_data():
         municipio = estacion["Municipio"]
         provincia = estacion["Provincia"]
 
-        db.insert_location_data_BD2(longitud, latitud, provincia, municipio, localidad, cp, direccion) ###!!!
+        db.insert_location_data_BD(longitud, latitud, provincia, municipio, localidad, cp, direccion)
 
     
 # Insert distributor data of an gas station into the database 
@@ -81,8 +81,9 @@ def insert_gas_station_distributor_data():
         longitud = station["Longitud (WGS84)"]
         mail = None
         idApi = station["IDEESS"]
+        tipo = "G"
 
-        db.insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi)
+        db.insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi, tipo)
 
 # Insert gas station data into the database   
 def insert_gas_station_data():

@@ -36,6 +36,10 @@ function displayRoute(routeData) {
     mapa.fitBounds(currentRoute.getBounds());
 }
 
+function moreInfo() {
+    window.location.href = '/search/info_gas_station';
+}
+
 function displayDistributor(data) {
     distributors.forEach(function(marker) {
         mapa.removeLayer(marker);
@@ -62,7 +66,6 @@ function displayDistributor(data) {
 }
 
 
-
 function fetchAndDisplayRoute() {
     // Retrieve values from input fields
     const origin = document.getElementById('origin').value;
@@ -70,7 +73,7 @@ function fetchAndDisplayRoute() {
 
     // Check if the input fields are not empty
     if (!origin || !destination) {
-        console.error('Origen y destino son necesarios');
+        alert('Origen y destino son necesarios');
         return;
     }
 
@@ -81,17 +84,22 @@ function fetchAndDisplayRoute() {
 
     // Fetch the route using the updated URL with query parameters
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error); });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.route && data.distributors) {
                 displayRoute(data.route);
                 displayDistributor(data.distributors); 
             } else {
-                console.error('No se encontraron datos de ruta');
+                alert('No se encontraron datos de ruta');
             }
         })
         .catch(error => {
-            console.error('Error al obtener las rutas:', error);
+            alert(error.message); // Muestra un mensaje de error como alerta
         });
 }
 

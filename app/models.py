@@ -1,6 +1,6 @@
 #!!!REVISAR RELACIONES
 from app import db
-from sqlalchemy import Column, ForeignKey, Integer, String, Date, Time, Numeric, Boolean, LargeBinary
+from sqlalchemy import Column, ForeignKey, Integer, String, Date, Time, Numeric, Boolean, LargeBinary, UniqueConstraint
 from geoalchemy2 import Geography
 from geoalchemy2.shape import to_shape
 from shapely.geometry import Point
@@ -59,13 +59,18 @@ class DaRespuestaPropietario(db.Model):
 
 class Distribuidora(db.Model):
     __tablename__ = 'Distribuidora'
+    __table_args__ = (
+        UniqueConstraint('IdAPI'),
+        UniqueConstraint('Location'),
+    )
 
     IdDistribuidora = Column(Integer, primary_key=True)
     Nombre = Column(String(100))
-    Latitud = Column(Numeric, ForeignKey('Ubicacion.Latitud'))
-    Longitud = Column(Numeric, ForeignKey('Ubicacion.Longitud'))
     MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'))
     IdAPI = Column(String(100), unique=True)
+    Location = Column(Geography('POINT'), ForeignKey('Ubicacion.Location'))
+    Tipo = Column(String(1))
+
 
     #valoraciones = db.relationship('Valoracion', backref='distribuidora', lazy='dynamic')
     #estaciones_recarga = db.relationship('EstacionRecarga', backref='distribuidora', uselist=False)
@@ -223,12 +228,10 @@ class TipoPunto(db.Model):
 
     #suministra_estacion_recargas = db.relationship('SuministraEstacionRecarga', backref='tipo_punto', lazy='dynamic')
 
-
 class Ubicacion(db.Model):
     __tablename__ = 'Ubicacion'
 
-    Longitud = Column(Numeric, primary_key=True)
-    Latitud = Column(Numeric, primary_key=True)
+    Location = Column(Geography('POINT'), primary_key=True)
     Provincia = Column(String(255))
     Municipio = Column(String(255))
     Localidad = Column(String(255))
@@ -237,9 +240,5 @@ class Ubicacion(db.Model):
 
     #distribuidoras = db.relationship('Distribuidora', backref='ubicacion', lazy='dynamic')
 
-class PruebaUbicacion(db.Model):
-    __tablename__ = 'Prueba_ubicacion'
-    id = Column(Integer, primary_key=True)
-    location = Column(Geography('POINT'))
 
 

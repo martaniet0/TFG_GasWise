@@ -82,8 +82,9 @@ def insert_EV_station_distributor_data():
         longitud = address_info.get("Longitude")
         mail = None
         idApi = "EV" + str(station.get("ID"))
+        tipo = "E"
 
-        db.insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi)
+        db.insert_distributor_data_BD(nombre, latitud, longitud, mail, idApi, tipo)
 
 
 # Insert EV station data into the database   

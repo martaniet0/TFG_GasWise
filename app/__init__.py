@@ -19,7 +19,7 @@ def create_app():
     from app.routes import routes_bp
     from .views.search import search_bp
 
-    app.register_blueprint(routes_bp, url_prefix='/routes')
+    app.register_blueprint(routes_bp)
     app.register_blueprint(search_bp, url_prefix='/search')
 
     return app
