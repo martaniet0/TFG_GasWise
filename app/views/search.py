@@ -128,7 +128,8 @@ def get_route_with_distributors():
         return jsonify({'error': 'Ruta no disponible: conexión marítima entre origen y destino.'}), 400
 
     get_info_route_coordinates(*origin_coordinates, *destination_coordinates)
-    db.get_route_distributors()
+    
+    db.get_route_distributors(tipo="G")
 
     try:
         with open('app/json_data/route_coordinates.json', 'r') as file:
@@ -141,7 +142,8 @@ def get_route_with_distributors():
         return json_data
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
 @search_bp.route('/get_distributor_info/<lat>/<lon>')
 def get_distributor_info(lat, lon):
     data = db.get_distributor_data(lat, lon)

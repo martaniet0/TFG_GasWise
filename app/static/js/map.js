@@ -40,12 +40,19 @@ function moreInfo() {
     window.location.href = '/search/info_gas_station';
 }
 
-function displayDistributor(data) {
+function displayDistributor(data,) {
     distributors.forEach(function(marker) {
         mapa.removeLayer(marker);
     });
 
     distributors = [];
+
+    
+
+    var blueIcon = L.icon({
+        iconUrl: 'app/static/img/blue_icon.png',  
+        iconSize: [38, 38],  
+    });
 
     data.coordinates.forEach(function(coord) {
         var marker = L.marker([coord[0], coord[1]]).addTo(mapa);

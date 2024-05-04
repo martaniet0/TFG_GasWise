@@ -145,21 +145,34 @@ def get_distributor_ID(idApi):
 
 #!!!Debo modificarlo para que busque en tabla Distribuidora y seleccione por tipo de distribuidora
 # Get gas stations and EV stations in a given route
-def get_route_distributors():
+def get_route_distributors(tipo):
     conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")#!!!
     cur = conn.cursor()
 
     # Crear la consulta SQL
     puntos_sql = search.get_route_array()
     puntos_str = ',\n      '.join(puntos_sql)
-    query = f"""
-    WITH ruta AS (
-      SELECT ST_Buffer(ST_MakeLine(ARRAY[{puntos_str}])::geography, 2000) AS geom
-    )
-    SELECT ST_AsText(g."Location")
-    FROM public."Ubicacion" g, ruta r
-    WHERE ST_DWithin(g."Location"::geography, r.geom, 0);
-    """
+    if tipo == "A":
+        query = f"""
+        WITH ruta AS (
+        SELECT ST_Buffer(ST_MakeLine(ARRAY[{puntos_str}])::geography, 2000) AS geom
+        )
+        SELECT ST_AsText(g."Location")
+        FROM public."Distribuidora" g, ruta r
+        WHERE ST_DWithin(g."Location"::geography, r.geom, 0);
+        """
+    else:
+        query = f"""
+        WITH ruta AS (
+        SELECT ST_Buffer(ST_MakeLine(ARRAY[{puntos_str}])::geography, 2000) AS geom
+        )
+        SELECT ST_AsText(g."Location")
+        FROM public."Distribuidora" g, ruta r
+        WHERE ST_DWithin(g."Location"::geography, r.geom, 0)
+        AND g."Tipo" = '{tipo}';
+
+            """
+    
 
     try:
         cur.execute(query)

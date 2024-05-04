@@ -38,3 +38,7 @@ def insert_location_data_BD_EV_stations():
 def mapa():
     return render_template('map.html')
 
+@routes_bp.route('/prueba', methods=['GET'])
+def prueba():
+    return render_template('select_search.html')
+
