@@ -4,6 +4,11 @@ import app.views.database as db
 import json
 import requests
 
+from flask import Blueprint
+from flask_login import login_required
+
+EV_bp = Blueprint('EV', __name__)
+
 #Dictionary for the type of connectors
 connector_type = {
     1: "CCS (Type 2)",
@@ -124,3 +129,22 @@ def insert_EV_station_supply_data():
 
 
                     db.insert_station_EV_supply_data_BD(id_distribuidora, id_punto, carga_rapida, cantidad, voltaje, amperios, kW)
+
+############################################################################################################
+#RUTAS
+############################################################################################################
+
+#Ruta para obtener la información de una estación de carga de OpenChargeMap
+@EV_bp.route('/get_data_EV_stations', methods=['GET'])
+@login_required
+def get_data_EV_stations():
+    get_info_EV_stations()
+
+#Ruta para insertar los datos de las estaciones de carga de vehículos eléctricos en la base de datos
+@EV_bp.route('/insert_EV_BD_station_data', methods=['GET'])
+@login_required
+def insert_EV_BD_station_data():
+    insert_EV_station_location_data()
+    insert_EV_station_distributor_data()
+    insert_EV_station_data()
+    insert_EV_station_supply_data()

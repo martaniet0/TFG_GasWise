@@ -11,18 +11,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 var currentRoute = null; 
 var distributors = [];
 
-function add_icon_to_map(lat, lon) {
-    var customIcon = L.icon({
-        iconUrl: 'static/img/img1.png', 
-        iconSize: [20, 20], 
-    });
-
-    var marker = L.marker([lat, lon], {icon: customIcon});
-
-    marker.addTo(mapa);
-}
-
-
 function displayRoute(routeData) {
     if (currentRoute) {
         mapa.removeLayer(currentRoute);
@@ -40,22 +28,31 @@ function moreInfo() {
     window.location.href = '/search/info_gas_station';
 }
 
-function displayDistributor(data,) {
+function displayDistributor(data) {
     distributors.forEach(function(marker) {
         mapa.removeLayer(marker);
     });
 
     distributors = [];
 
-    
-
-    var blueIcon = L.icon({
-        iconUrl: 'app/static/img/blue_icon.png',  
-        iconSize: [38, 38],  
+    var iconoBase = L.Icon.extend({
+        options: {
+            iconSize:     [25, 25]
+            //iconAnchor:   [22, 94],
+            //popupAnchor:  [-3, -76]
+        }
     });
 
+    tipo = "E"
+
+    if (tipo == "E")
+        var coloredIcon = new iconoBase({iconUrl: './static/img/green_icon.png'})
+    else
+        var coloredIcon = new iconoBase({iconUrl: './static/img/orange_icon.png'})
+
     data.coordinates.forEach(function(coord) {
-        var marker = L.marker([coord[0], coord[1]]).addTo(mapa);
+        //var marker = L.marker([coord[0], coord[1]]).addTo(mapa);
+        var marker = L.marker([coord[0], coord[1]], {icon: coloredIcon}).addTo(mapa);
         
         marker.on('click', function(e) {
             var lat= e.latlng.lat;
@@ -106,7 +103,7 @@ function fetchAndDisplayRoute() {
             }
         })
         .catch(error => {
-            alert(error.message); // Muestra un mensaje de error como alerta
+            alert(error.message); 
         });
 }
 

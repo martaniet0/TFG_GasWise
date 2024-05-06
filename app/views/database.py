@@ -7,10 +7,10 @@ from geoalchemy2 import functions as geo_func
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import Geography, WKTElement
+from flask_login import login_required, current_user
 
 
-
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador
 
 import app.views.search as search
 import app.views.helpers as helpers
@@ -38,6 +38,10 @@ def session_scope():
 
 ############################################################################################################
 # INSERT DATA INTO THE DB USING SQLALCHEMY
+############################################################################################################
+
+############################################################################################################
+# Gas station and EV
 ############################################################################################################
 
 # Gas station and EV: Insert location data into the database  
@@ -133,6 +137,39 @@ def insert_station_EV_supply_data_BD(id_distribuidora, id_punto, carga_rapida, c
             session.commit()
         except IntegrityError:
             session.rollback()
+
+############################################################################################################
+# Drivers, owners and admins
+############################################################################################################
+
+def insert_driver_data_BD(mail, contrasenia, nombre, apellidos, tipo_vehiculo):
+    with session_scope() as session:
+        try:
+            new_driver = Conductor(
+                MailConductor=mail,
+                Contrasenia=contrasenia,
+                Nombre=nombre,
+                Apellidos=apellidos,
+                TipoVehiculo=tipo_vehiculo
+            )
+            session.add(new_driver)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+
+def update_driver_data_BD(mail, nombre, apellidos, tipo_vehiculo, contrasenia):
+    with session_scope() as session:
+        try:
+            driver = session.query(Conductor).filter_by(MailConductor=mail).first()
+            driver.Nombre = nombre
+            driver.Apellidos = apellidos
+            driver.TipoVehiculo = tipo_vehiculo
+            if contrasenia:
+                driver.Contrasenia = contrasenia
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+
 
 ############################################################################################################
 # SELECT DATA FROM THE DB USING SQLALCHEMY

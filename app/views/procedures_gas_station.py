@@ -4,6 +4,11 @@ import app.views.database as db
 import json
 import requests
 
+from flask import Blueprint
+from flask_login import login_required
+
+gas_bp = Blueprint('gas', __name__)
+
 gas_type = {
     1: "Biodiesel",
     2: "Bioetanol",
@@ -22,6 +27,7 @@ gas_type = {
 }
 
 # Get gas stations data from the API and save it in a JSON file
+#https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/help
 def get_info_gas_stations():
     url = 'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres'
 
@@ -122,7 +128,24 @@ def insert_gas_station_supply_data():
                 db.insert_gas_station_supply_data_BD(id_distribuidora, id_combustible, precio)
             i+=1
                 
+############################################################################################################
+#RUTAS
+############################################################################################################
 
+#Ruta para obtener la información de una estación de servicio de la API del Ministerio de Industria, Energía y Turismo
+@gas_bp.route('/get_data_gas_stations', methods=['GET'])
+@login_required
+def get_data_gas_stations():
+    get_info_gas_stations()
+
+#Ruta para insertar los datos de las estaciones de servicio en la base de datos
+@gas_bp.route('/insert_EV_BD_station_data', methods=['GET'])
+@login_required
+def insert_gas_BD_station_data():
+    insert_gas_station_location_data()
+    insert_gas_station_distributor_data()
+    insert_gas_station_data()
+    insert_gas_station_supply_data()
 
     
     

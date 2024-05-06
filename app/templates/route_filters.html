@@ -1,8 +1,16 @@
 {% extends "base.html" %}
 
-{% block content %}
-    <link rel="stylesheet" href="../static/css/select_search.css">
+<!-- !!!No esta funcionando pero no sé pq-->
+{% block title %}
+    Filtrar
+{% endblock title %}
 
+{% block styles %}
+    <link rel="stylesheet" href="../static/css/select_search.css">
+{% endblock styles %}
+
+{% block content %}
+    <h1>Página poner los filtros de una búsqueda</h1>
     <div class="search-container">
         <h1>Buscar</h1>
         <ul>
@@ -11,4 +19,4 @@
             <li><button type="button">Ambas</button></li>
         </ul>
     </div>
-{% endblock %}
+{% endblock content %}

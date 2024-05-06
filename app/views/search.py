@@ -1,4 +1,5 @@
 from flask import request, jsonify, Blueprint, render_template
+from flask_login import login_required
 
 import app.views.database as db
 import json
@@ -6,7 +7,10 @@ import requests
 
 search_bp = Blueprint('search', __name__)
 
-#Habría que hacer una función para guardar datos en json de la ruta
+headers = {
+    'User-Agent': 'gasWise/1.0',
+    'Referer': 'http://gaswise.com'
+}
 
 #Open JSON file with data of gas stations
 def open_file_route_coordinates():
@@ -37,7 +41,7 @@ def get_info_route_coordinates(origin_lon, origin_lat, destination_lon, destinat
     url = f'https://router.project-osrm.org/route/v1/driving/{origin_lat},{origin_lon};{destination_lat},{destination_lon}?overview=full&geometries=geojson'
     
     try:
-        r = requests.get(url)
+        r = requests.get(url, headers=headers)
         r.raise_for_status()  # Esto lanzará un error si la solicitud falló
 
         datos = r.json()
@@ -51,7 +55,7 @@ def get_info_route_coordinates(origin_lon, origin_lat, destination_lon, destinat
 
 def get_coordinates(place_name):
     url = f"https://nominatim.openstreetmap.org/search?format=json&q={place_name}"
-    response = requests.get(url)
+    response = requests.get(url, headers=headers)
     data = response.json()
     if data:
         return data[0]['lat'], data[0]['lon']
@@ -59,7 +63,7 @@ def get_coordinates(place_name):
 
 def get_country(lat, lon):
     url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
-    response = requests.get(url)
+    response = requests.get(url, headers=headers)
     data = response.json()
     if data:
         return data['address']['country_code']
@@ -67,7 +71,7 @@ def get_country(lat, lon):
 
 def get_CCAA_code(lat, lon):
     url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
-    response = requests.get(url)
+    response = requests.get(url,headers=headers)
     if response.status_code == 200:
         data = response.json()
         return data.get('address', {}).get('ISO3166-2-lvl4', None)
@@ -97,9 +101,21 @@ def check_route_on_water(origin_lat, origin_lon, destination_lat, destination_lo
             return False
     except Exception as e:
         print(str(e))
-        return None  # or raise an error
+        return None  
+    
+############################################################################################################
+#RUTAS
+############################################################################################################
 
-#def init_search(app):
+#Ruta para obtener el mapa
+@search_bp.route('/mapa', methods=['GET'])
+@login_required
+def mapa():
+    return render_template('map.html')
+
+#Ruta para obtener la ruta entre dos puntos y las distribuidoras que se encuentran en ella
+#param: tipo_distribuidora y filtros
+#!!! Sin terminar
 @search_bp.route('/get_route_with_distributors')
 def get_route_with_distributors():
     origin = request.args.get('origin')
@@ -113,8 +129,6 @@ def get_route_with_distributors():
 
 
     if origin_coordinates == (None, None) or destination_coordinates == (None, None):
-        with open('app/test/log.txt', 'a') as file:
-            file.write(f"Origin: {origin_coordinates}\nDestination: {destination_coordinates}" + "hola")
         return jsonify({'error': 'Ruta no disponible: no se encontraron coordenadas para los puntos proporcionados'}), 400
 
     origin_country = get_country(*origin_coordinates)
@@ -129,7 +143,7 @@ def get_route_with_distributors():
 
     get_info_route_coordinates(*origin_coordinates, *destination_coordinates)
     
-    db.get_route_distributors(tipo="G")
+    db.get_route_distributors(tipo="A")
 
     try:
         with open('app/json_data/route_coordinates.json', 'r') as file:
@@ -143,7 +157,8 @@ def get_route_with_distributors():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+#Ruta para obtener la información (corta) de una distribuidora en el pop up del mapa
+#param: latitud y longitud
 @search_bp.route('/get_distributor_info/<lat>/<lon>')
 def get_distributor_info(lat, lon):
     data = db.get_distributor_data(lat, lon)
@@ -165,6 +180,16 @@ def get_distributor_info(lat, lon):
 
     return response
 
+#Ruta para obtener la información (completa) de una distribuidora
+#param: latitud y longitud
+#!!! sin terminar
 @search_bp.route('/info_gas_station')
 def info_gas_station():
-    return render_template('info_gas_station.html')
+    return render_template('info_distributor.html')
+
+#Ruta para selecionar los filtros de búsqueda
+#param: ?
+#!!! sin terminar
+@search_bp.route('/select', methods=['GET'])
+def select():
+    return render_template('route_filters.html')
