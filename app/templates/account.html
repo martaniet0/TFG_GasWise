@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 
 {% block title %}
     Búsqueda
@@ -6,88 +6,28 @@
 
 <!--- AQUÍ PONGO SI QUIERO UN STYLE ESPECÍFICO PARA ESTA PÁGINA
 {% block styles %}
-    <link rel="stylesheet" href="../static/css/xxx.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 {% endblock styles %}
 --->
 
 {% block content %}
-    <div class="content-section">
-      <div class="media">
-        <div class="media-body">
-          <h2 class="account-heading">Nombre: {{ current_user.Nombre }}</h2>
-          <p class="text-secondary">{{ current_user.MailConductor }}</p>
+    <div>
+        <div>
+          <h2 class="account-heading">¡Hola, {{ current_user.Nombre }}!</h2>
+          {% if user_type() == 'C' %}
+            <p class="text-secondary">{{ current_user.MailConductor }}</p>
+          {% elif user_type() == 'P' %}
+            <p class="text-secondary">{{ current_user.MailPropietario }}</p>
+          {% endif %}
         </div>
         <div class="content-section">
             <form method="POST" action="">
                 {{ form.hidden_tag() }}
-                <fieldset class="form-group">
-                    <legend class="border-bottom mb-4">Modificar perfil</legend>
-                    <div class="form-group">
-                        {{ form.nombre.label }}
-                        {% if form.nombre.errors %}
-                            {{ form.nombre(class="form-control form-control-lg is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.nombre.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ form.nombre(class="form-control form-control-lg") }}
-                        {% endif %}
-                    </div>
-                    <div class="form-group">
-                        {{ form.apellidos.label }}
-                        {% if form.apellidos.errors %}
-                            {{ form.apellidos(class="form-control form-control-lg is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.apellidos.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ form.apellidos(class="form-control form-control-lg") }}
-                        {% endif %}
-                    </div>
-                    <div class="form-group">
-                        {{ form.tipoVehiculo.label }}
-                        {% if form.tipoVehiculo.errors %}
-                            {{ form.tipoVehiculo(class="form-control form-control-lg is-invalid")}}
-                            <div class="invalid-feedback">
-                                {% for error in form.tipoVehiculo.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ form.tipoVehiculo(class="form-control form-control-lg") }}
-                        {% endif %}
-                    </div>
-                    <div class="form-group">
-                        {{ form.password.label }}
-                        {% if form.password.errors %}
-                            {{ form.password(class="form-control form-control-lg is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.password.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ form.password(class="form-control form-control-lg") }}
-                        {% endif %}
-                    </div>
-                    <div class="form-group">
-                        {{ form.confirm_password.label }}
-                        {% if form.confirm_password.errors %}
-                            {{ form.confirm_password(class="form-control form-control-lg is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.confirm_password.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ form.confirm_password(class="form-control form-control-lg") }}
-                        {% endif %}
-                    </div>
-                </fieldset>
+                {% if user_type() == 'C' %}
+                    {{ render_conductor_fields(form) }}
+                {% elif user_type() == 'P' %}
+                    {{ render_propietario_fields(form) }}
+                {% endif %}
                 <div class="form-group">
                     {{ form.submit(class="btn btn-outline-info") }}
                 </div>
@@ -95,3 +35,169 @@
         </div>
     </div>
 {% endblock content %}
+
+<script>
+    function setUserType(userType) {
+        var conductorFields = document.getElementById('conductor_fields');
+        var propietarioFields = document.getElementById('propietario_fields');
+        var allInputsConductor = conductorFields.querySelectorAll('input, select');
+        var allInputsPropietario = propietarioFields.querySelectorAll('input, select');
+    
+        // Deshabilitar todos los campos inicialmente
+        allInputsConductor.forEach(input => {
+            input.disabled = true;  // Los campos se deshabilitan pero no se configuran como requeridos
+        });
+        allInputsPropietario.forEach(input => {
+            input.disabled = true;  // Los campos se deshabilitan pero no se configuran como requeridos
+        });
+    
+        // Habilitar campos según el tipo de usuario seleccionado
+        if (userType === 'conductor') {
+            conductorFields.style.display = 'block';  // Mostrar campos de conductor
+            propietarioFields.style.display = 'none';  // Ocultar campos de propietario
+            allInputsConductor.forEach(input => {
+                input.disabled = false;  // Habilitar todos los campos para conductores
+            });
+        } else if (userType === 'propietario') {
+            conductorFields.style.display = 'none';  // Ocultar campos de conductor
+            propietarioFields.style.display = 'block';  // Mostrar campos de propietario
+            allInputsPropietario.forEach(input => {
+                input.disabled = false;  // Habilitar todos los campos para propietarios
+            });
+        }
+    }
+</script>
+
+{% macro render_conductor_fields(form) %}
+<fieldset class="form-group">
+    <legend class="border-bottom mb-4">Modificar perfil</legend>
+    <div class="form-group">
+        {{ form.nombre.label }}
+        {% if form.nombre.errors %}
+            {{ form.nombre(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.nombre.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.nombre(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.apellidos.label }}
+        {% if form.apellidos.errors %}
+            {{ form.apellidos(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.apellidos.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.apellidos(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.tipoVehiculo.label }}
+        {% if form.tipoVehiculo.errors %}
+            {{ form.tipoVehiculo(class="form-control form-control-lg is-invalid")}}
+            <div class="invalid-feedback">
+                {% for error in form.tipoVehiculo.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.tipoVehiculo(class="form-control form-control-lg") }}
+        {% endif %}
+       <!-- <small class="form-text text-muted">
+            Seleccionar 'Eléctrico' o 'Híbrido enchufable' mostrará por defecto estaciones de recarga en la ruta, mientras que elegir 'Gasolina, Diésel o Gas' o 'Híbrido' mostrará gasolineras. Puedes ajustar estas preferencias en cualquier momento desde los filtros.
+        </small>-->
+    </div>
+    <div class="form-group">
+        {{ form.password.label }}
+        {% if form.password.errors %}
+            {{ form.password(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.password.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.password(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.confirm_password.label }}
+        {% if form.confirm_password.errors %}
+            {{ form.confirm_password(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.confirm_password.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.confirm_password(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+</fieldset>
+{% endmacro %}
+
+{% macro render_propietario_fields(form) %}
+<fieldset class="form-group">
+    <legend class="border-bottom mb-4">Modificar perfil</legend>
+    <div class="form-group">
+        {{ form.nombre.label }}
+        {% if form.nombre.errors %}
+            {{ form.nombre(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.nombre.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.nombre(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.apellidos.label }}
+        {% if form.apellidos.errors %}
+            {{ form.apellidos(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.apellidos.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.apellidos(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.password.label }}
+        {% if form.password.errors %}
+            {{ form.password(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.password.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.password(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+    <div class="form-group">
+        {{ form.confirm_password.label }}
+        {% if form.confirm_password.errors %}
+            {{ form.confirm_password(class="form-control form-control-lg is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in form.confirm_password.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ form.confirm_password(class="form-control form-control-lg") }}
+        {% endif %}
+    </div>
+</fieldset>
+{% endmacro %}
+
+

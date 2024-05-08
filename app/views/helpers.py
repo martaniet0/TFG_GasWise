@@ -1,4 +1,8 @@
 import json
+from app.models import Conductor, Propietario
+from flask_login import current_user, login_required
+from functools import wraps
+from flask import redirect, url_for, flash
 
 def to_float(n):    
     try:
@@ -44,3 +48,45 @@ def get_key(val, dic):
          if val == value:
              return key
     return None
+
+#Check if the user is a driver or owner
+def user_type():
+    if isinstance(current_user, Conductor):
+        return "C"
+    elif isinstance(current_user, Propietario):
+        return "P"
+    return None 
+
+#Obtener el tipo de distribuidora por defecto dado el tipo de vehiculo del conductor actual
+def get_default_distributor():
+    if user_type() == "C":
+        if current_user.TipoVehiculo == "E" or current_user.TipoVehiculo == "H":
+            return "E"
+        elif current_user.TipoVehiculo == "G" or current_user.TipoVehiculo == "D":
+            return "G"
+    return None
+
+############################################################################################################
+#DECORATORS
+############################################################################################################
+#Decorator to check if the user is a driver
+def driver_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or user_type() != "C":
+            flash('Esa página solo es accesible para conductores.', 'warning')
+            return redirect(url_for('users.home_owner'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+#Decorator to check if the user is an owner
+def owner_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or user_type() != "P":
+            flash('Esa página solo es accesible para propietarios.', 'warning')
+            return redirect(url_for('search.mapa'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+

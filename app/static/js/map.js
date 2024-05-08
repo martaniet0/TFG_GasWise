@@ -1,3 +1,15 @@
+// Variable to store the reference to the layer of the route. It allows to remove the previous route when a new one is calculated
+var currentRoute = null; 
+var distributors = [];
+
+//Inicializa el mapa
+/*document.addEventListener('DOMContentLoaded', function() {
+    var mapa = L.map('map').setView([40.416775, -3.703790], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20
+    }).addTo(mapa);
+});*/
+
 
 //Inicialization of the map. The map is centered in Madrid, Spain
 var mapa = L.map('map').setView([40.416775, -3.703790], 6); 
@@ -7,9 +19,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(mapa);
 
-// Variable to store the reference to the layer of the route. It allows to remove the previous route when a new one is calculated
-var currentRoute = null; 
-var distributors = [];
+
+
 
 function displayRoute(routeData) {
     if (currentRoute) {
@@ -28,7 +39,7 @@ function moreInfo() {
     window.location.href = '/search/info_gas_station';
 }
 
-function displayDistributor(data) {
+function displayDistributor(data, tipo, w, h) {
     distributors.forEach(function(marker) {
         mapa.removeLayer(marker);
     });
@@ -37,18 +48,15 @@ function displayDistributor(data) {
 
     var iconoBase = L.Icon.extend({
         options: {
-            iconSize:     [25, 25]
+            iconSize:     [w, h]
             //iconAnchor:   [22, 94],
             //popupAnchor:  [-3, -76]
         }
     });
 
-    tipo = "E"
+    //tipo = "E"
 
-    if (tipo == "E")
-        var coloredIcon = new iconoBase({iconUrl: './static/img/green_icon.png'})
-    else
-        var coloredIcon = new iconoBase({iconUrl: './static/img/orange_icon.png'})
+    var coloredIcon = new iconoBase({iconUrl: tipo == "E" ? greenIconUrl : orangeIconUrl});
 
     data.coordinates.forEach(function(coord) {
         //var marker = L.marker([coord[0], coord[1]]).addTo(mapa);
@@ -70,11 +78,12 @@ function displayDistributor(data) {
 }
 
 
-function fetchAndDisplayRoute() {
+function fetchAndDisplayRoute(event) {
+    event.preventDefault();
     // Retrieve values from input fields
     const origin = document.getElementById('origin').value;
     const destination = document.getElementById('destination').value;
-
+    
     // Check if the input fields are not empty
     if (!origin || !destination) {
         alert('Origen y destino son necesarios');
@@ -85,6 +94,7 @@ function fetchAndDisplayRoute() {
     const url = new URL('/search/get_route_with_distributors', window.location.origin);
     url.searchParams.append('origin', origin);
     url.searchParams.append('destination', destination);
+    //!!!Encodear
 
     // Fetch the route using the updated URL with query parameters
     fetch(url)
@@ -97,7 +107,7 @@ function fetchAndDisplayRoute() {
         .then(data => {
             if (data.route && data.distributors) {
                 displayRoute(data.route);
-                displayDistributor(data.distributors); 
+                displayDistributor(data.distributors, data.tipo, 35, 35); 
             } else {
                 alert('No se encontraron datos de ruta');
             }
@@ -107,5 +117,40 @@ function fetchAndDisplayRoute() {
         });
 }
 
-
+function fetchAndDisplayNearest(event) {
+    event.preventDefault();
+    // Retrieve values from input fields
+    const origin = document.getElementById('origin').value;
     
+    // Check if the input fields are not empty
+    if (!origin) {
+        alert('Origen necesario');
+        return;
+    }
+
+    // Append the parameters to the URL
+    const url = new URL('/search/get_nearest_distributors', window.location.origin);
+    url.searchParams.append('origin', origin);
+    //!!!Encodear
+
+    // Fetch the route using the updated URL with query parameters
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.distributors) {
+                mapa.setView([data.origin[0], data.origin[1]], 12); 
+                displayDistributor(data.distributors, data.tipo, 50, 50); 
+            } else {
+                alert('No se encontraron distribuidores cercanos');
+            }
+        })
+        .catch(error => {
+            alert(error.message); 
+        });
+}
+

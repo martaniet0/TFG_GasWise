@@ -1,13 +1,9 @@
 import re
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import func
-from geoalchemy2 import functions as geo_func
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
-from geoalchemy2 import Geography, WKTElement
-from flask_login import login_required, current_user
 
 
 from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador
@@ -170,6 +166,34 @@ def update_driver_data_BD(mail, nombre, apellidos, tipo_vehiculo, contrasenia):
         except IntegrityError:
             session.rollback()
 
+def insert_owner_data_BD(mail, contrasenia, nombre, apellidos, documento, activo):
+    with session_scope() as session:
+        try:
+            new_owner = Propietario(
+                MailPropietario=mail,
+                Contrasenia=contrasenia,
+                Nombre=nombre,
+                Apellidos=apellidos,
+                Documento=documento, 
+                Activo = activo
+            )
+            session.add(new_owner)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+
+def update_owner_data_BD(mail, nombre, apellidos, contrasenia):
+    with session_scope() as session:
+        try:
+            owner = session.query(Propietario).filter_by(MailPropietario=mail).first()
+            owner.Nombre = nombre
+            owner.Apellidos = apellidos
+            if contrasenia:
+                owner.Contrasenia = contrasenia
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+
 
 ############################################################################################################
 # SELECT DATA FROM THE DB USING SQLALCHEMY
@@ -189,6 +213,7 @@ def get_route_distributors(tipo):
     # Crear la consulta SQL
     puntos_sql = search.get_route_array()
     puntos_str = ',\n      '.join(puntos_sql)
+    #!!! ESto por el momento no lo uso
     if tipo == "A":
         query = f"""
         WITH ruta AS (
@@ -233,6 +258,32 @@ def get_route_distributors(tipo):
     finally:
         cur.close()
         conn.close()
+
+
+
+# Get the nearest gas stations and EV stations to a given location
+def get_nearest_distributors(lat, lon, tipo):
+    with session_scope() as session:
+        sql = text("""
+            SELECT ST_AsText(g."Location") 
+            FROM "Distribuidora" g
+            WHERE "Tipo" = :tipo AND ST_Distance("Location", ST_MakePoint(:lon, :lat)::geography) <= 2000
+        """)
+
+        # Ejecutar la consulta pasando los parámetros lat, lon y tipo
+        results = session.execute(sql, {'lat': lat, 'lon': lon, 'tipo': tipo}).fetchall()
+
+        
+        coordinates_list = []
+        for result in results:
+            coords = re.findall(r"[-\d\.]+", result[0])
+            if coords:
+                coordinates_list.append([float(coords[1]), float(coords[0])])
+
+        coordinates_dict = {"coordinates": coordinates_list}
+
+        with open('app/json_data/nearest_distributors.json', 'w') as file:
+            json.dump(coordinates_dict, file, indent=4)
 
 #Get distributor info 
 #!!! Con SQL pq con GeoAlchemy no me sale

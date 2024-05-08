@@ -9,7 +9,10 @@ from flask_login import UserMixin
 #!!!Como hacerlo para propietario y administrador?
 @login_manager.user_loader
 def load_user(user_email):
-    return Conductor.query.get(user_email)
+    user = Conductor.query.get(user_email)
+    if user is not None:
+        return user
+    return Propietario.query.get(user_email)
 
 class Administrador(db.Model):
     __tablename__= 'Administrador'
@@ -114,7 +117,7 @@ class Pregunta(db.Model):
     IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), nullable=False)
     MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), nullable=False)
 
-class Propietario(db.Model):
+class Propietario(db.Model, UserMixin):
     __tablename__ = 'Propietario'
 
     MailPropietario = Column(String(100), primary_key=True)
@@ -122,6 +125,19 @@ class Propietario(db.Model):
     Nombre = Column(String(100), nullable=False)
     Apellidos = Column(String(100))
     Documento = Column(LargeBinary, nullable=False)
+    Activo = Column(Boolean, nullable=False)
+
+    def get_id(self):
+        return self.MailPropietario
+    
+    @property
+    def is_active(self):
+        return self.Activo
+
+    #establece si el usuario esta o no activo
+    @is_active.setter
+    def is_active(self, value):
+        self.Activo = value
 
 class Respuesta(db.Model):
     __tablename__ = 'Respuesta'

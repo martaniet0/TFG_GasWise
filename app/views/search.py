@@ -2,6 +2,7 @@ from flask import request, jsonify, Blueprint, render_template
 from flask_login import login_required
 
 import app.views.database as db
+import app.views.helpers as helpers
 import json
 import requests
 
@@ -143,7 +144,8 @@ def get_route_with_distributors():
 
     get_info_route_coordinates(*origin_coordinates, *destination_coordinates)
     
-    db.get_route_distributors(tipo="A")
+    tipo = helpers.get_default_distributor()
+    db.get_route_distributors(tipo)
 
     try:
         with open('app/json_data/route_coordinates.json', 'r') as file:
@@ -151,7 +153,38 @@ def get_route_with_distributors():
         with open('app/json_data/route_distributors.json', 'r') as file:
             distributors = json.load(file)
 
-        json_data = json.dumps({'route': route, 'distributors': distributors})
+        json_data = json.dumps({'route': route, 'tipo':tipo, 'distributors': distributors})
+
+        return json_data
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+#Ruta para obtener las distribuidoras cercanas a un punto 
+@search_bp.route('/get_nearest_distributors', methods=['GET'])
+def get_nearest_distributors():
+    origin = request.args.get('origin')
+
+    if not origin:
+        return jsonify({'error': 'Búsqueda errónea: se deben proporcionar origen'}), 400
+
+    origin_coordinates = get_coordinates(origin)
+
+    if origin_coordinates == (None, None):
+        return jsonify({'error': 'Búsqueda errónea: no se encontraron coordenadas para los puntos proporcionados'}), 400
+
+    origin_country = get_country(*origin_coordinates)
+
+    if origin_country != 'es':
+        return jsonify({'error': 'Búsqueda errónea: localización fuera de España'}), 400
+    
+    tipo = helpers.get_default_distributor()
+    db.get_nearest_distributors(origin_coordinates[0], origin_coordinates[1], tipo)
+
+    try:
+        with open('app/json_data/nearest_distributors.json', 'r') as file:
+            distributors = json.load(file)
+
+        json_data = json.dumps({'origin': origin_coordinates, 'tipo':tipo, 'distributors': distributors})
 
         return json_data
     except Exception as e:
@@ -167,7 +200,7 @@ def get_distributor_info(lat, lon):
         return jsonify({'error': 'No se encontraron datos para la ubicación proporcionada'}), 400
 
     if data[2] == 'E':
-        tipo = 'Estación de servicio'
+        tipo = 'Estación de recarga'
     else:  
         tipo = 'Gasolinera'
     
