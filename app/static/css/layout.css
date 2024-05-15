@@ -2,25 +2,38 @@ body, html {
     margin: 0;
     padding: 0;
     height: 100%;
+    overflow-y: hidden;
 }
 
 body {
     background: linear-gradient(
         0deg, 
-        #3AB68D 0%, 
+        #3ab68d 0%, 
         #269F82 37%, 
         #198F7A 62%, 
         #01726D 100%
     );
 }
 
-header {
+/*header {
     height: 60px; 
     padding: 10px;
     display: flex;
     justify-content: flex-end; 
     align-items: center;
-    background-color: rgb(255, 255, 255); 
+    background-color:  #ffffff  ;
+}
+
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+#font-logo-img{
+    width: 420px; 
+    height: 80px;
 }
 
 .icon {
@@ -35,11 +48,76 @@ img{
 }
 
 .left {
+    position: absolute;
     margin-left: 10px;
 }
 
 .right {
-    margin-right: 30px;
+    position: absolute;
+    right: 40px;
+}
+
+.right2 {
+    position: absolute;
+    right: 140px;
+}*/
+
+header {
+   /* height: 60px; 
+    padding: 5px;
+    position: relative; 
+    background-color: #ffffff;*/
+    height: 60px; 
+    padding: 5px;
+    position: relative;
+    background-color: rgba(255, 255, 255);
+    /*background-color: rgba(0, 0, 0, 0.4);*/
+    display: flex;
+    justify-content: center; /* Centra horizontalmente los elementos hijos */
+    align-items: center; /* Centra verticalmente los elementos hijos */
+}
+
+.icon {
+    position: absolute;
+    width: auto; 
+    height: auto;
+}
+
+#header-btn{
+    background-color: #01726d;
+    color: white;
+    font-weight: bolder;
+}
+
+
+#font-logo{
+    position: absolute;
+    align-self: center;
+}
+
+#font-logo-img {
+    width: 420px; 
+    height: 80px;
+}
+
+img {
+    width: 50px; 
+    height: auto;
+}
+
+.right {
+    position: absolute;
+    right: 40px;
+}
+
+.right2 {
+    position: absolute;
+    right: 140px;
+}
+
+.left {
+    position: absolute;
+    left: 10px;
 }
 
 
@@ -67,6 +145,9 @@ main {
     }
     img{
         width: 40px; 
+    }
+    #font-logo{
+        display: none;
     }
 
 }

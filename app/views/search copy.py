@@ -58,8 +58,6 @@ def get_coordinates(place_name):
     url = f"https://nominatim.openstreetmap.org/search?format=json&q={place_name}"
     response = requests.get(url, headers=headers)
     data = response.json()
-    with open('app/json_data/locations.json', 'w') as file:
-        file.write(json.dumps(data, indent=4))
     if data:
         return data[0]['lat'], data[0]['lon']
     return None, None
@@ -113,7 +111,6 @@ def check_route_on_water(origin_lat, origin_lon, destination_lat, destination_lo
 #Ruta para obtener el mapa
 @search_bp.route('/mapa', methods=['GET'])
 @login_required
-@helpers.driver_required
 def mapa():
     return render_template('map.html')
 
@@ -150,14 +147,6 @@ def get_route_with_distributors():
     tipo = helpers.get_default_distributor()
     db.get_route_distributors(tipo)
 
-    # Obtener todos los parámetros adicionales de forma dinámica
-    extra_params = {key: value for key, value in request.args.items() if key.startswith('param')}
-
-    if extra_params:
-        tipo = db.get_route_distributors(tipo, **extra_params)
-    else:
-        db.get_route_distributors(tipo)
-
     try:
         with open('app/json_data/route_coordinates.json', 'r') as file:
             route = json.load(file)
@@ -179,22 +168,17 @@ def get_nearest_distributors():
         return jsonify({'error': 'Búsqueda errónea: se deben proporcionar origen'}), 400
 
     origin_coordinates = get_coordinates(origin)
+
     if origin_coordinates == (None, None):
         return jsonify({'error': 'Búsqueda errónea: no se encontraron coordenadas para los puntos proporcionados'}), 400
 
     origin_country = get_country(*origin_coordinates)
+
     if origin_country != 'es':
         return jsonify({'error': 'Búsqueda errónea: localización fuera de España'}), 400
     
     tipo = helpers.get_default_distributor()
-
-    # Obtener todos los parámetros adicionales de forma dinámica
-    extra_params = {key: value for key, value in request.args.items() if key.startswith('param')}
-
-    if extra_params:
-        tipo = db.get_nearest_distributors(origin_coordinates[0], origin_coordinates[1], tipo, **extra_params)
-    else:
-        db.get_nearest_distributors(origin_coordinates[0], origin_coordinates[1], tipo)
+    db.get_nearest_distributors(origin_coordinates[0], origin_coordinates[1], tipo)
 
     try:
         with open('app/json_data/nearest_distributors.json', 'r') as file:
@@ -205,8 +189,6 @@ def get_nearest_distributors():
         return json_data
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 
 #Ruta para obtener la información (corta) de una distribuidora en el pop up del mapa
 #param: latitud y longitud

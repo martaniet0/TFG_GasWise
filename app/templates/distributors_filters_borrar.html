@@ -1,0 +1,165 @@
+{% extends "layout.html" %}
+
+<!-- !!!No esta funcionando pero no sé pq-->
+{% block title %}
+    Filtrar
+{% endblock title %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="../static/css/distributors_filters.css">
+{% endblock styles %}
+
+{% block content %}
+<div class="filters">
+    <!-- Desplegable 1: Tipo de distribuidora -->
+    <div class="mt-3">
+        <button class="btn w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDistributor" aria-expanded="false" aria-controls="collapseServices">
+            Tipo de distribuidora <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="collapse" id="collapseDistributor">
+            <div class="card card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="gasolinera" id="gasolinera" onchange="checkDistributorType('gasolinera')">
+                    <label class="form-check-label" for="gasolinera">
+                        Gasolinera
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="estacion_recarga" id="estacion_recarga" onchange="checkDistributorType('estacion_recarga')">
+                    <label class="form-check-label" for="estacion_recarga">
+                        Estación de recarga
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desplegable 2: Servicios -->
+    <div class="mt-3">
+        <button class="btn w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseServices" aria-expanded="false" aria-controls="collapseServices">
+            Servicios <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="collapse" id="collapseServices">
+            <div class="card card-body">
+                <!-- Checkbox para cada servicio -->
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="cafeteria">
+                    <label class="form-check-label" for="cafeteria">Cafetería</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="hospedaje">
+                    <label class="form-check-label" for="hospedaje">Hospedaje</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="lavado_coches">
+                    <label class="form-check-label" for="lavado_coches">Lavado de coches</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="lavado_camiones">
+                    <label class="form-check-label" for="lavado_camiones">Lavado de camiones</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="parking_camiones">
+                    <label class="form-check-label" for="parking_camiones">Parking de camiones</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="cambiapaniales">
+                    <label class="form-check-label" for="cambiapaniales">Cambiapañales</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="duchas">
+                    <label class="form-check-label" for="duchas">Duchas</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="supermercado">
+                    <label class="form-check-label" for="supermercado">Supermercado</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="amazon_locker">
+                    <label class="form-check-label" for="amazon_locker">Amazon Locker</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="citypaq">
+                    <label class="form-check-label" for="citypaq">Correos Citypaq</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="vaciado_aguas_negras">
+                    <label class="form-check-label" for="vaciado_aguas_negras">Vaciado aguas negras</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="estacion_accesible">
+                    <label class="form-check-label" for="estacion_accesible">Estación accesible</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desplegable de Tipo de Combustible -->
+    <div class="mt-3">
+        <button class="btn w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFuelType" aria-expanded="false" aria-controls="collapseFuelType">
+            Tipo de combustible <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="collapse" id="collapseFuelType">
+            <div class="card card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="tipo1">
+                    <label class="form-check-label" for="tipo1">Tipo 1</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="tipo2">
+                    <label class="form-check-label" for="tipo2">Tipo 2</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="tipo3">
+                    <label class="form-check-label" for="tipo3">Tipo 3</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desplegable de Tipo de Conector -->
+    <div class="mt-3">
+        <button class="btn w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConnectorType" aria-expanded="false" aria-controls="collapseConnectorType">
+            Tipo de conector <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="collapse" id="collapseConnectorType">
+            <div class="card card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="conector1">
+                    <label class="form-check-label" for="conector1">Tipo 1</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="conector2">
+                    <label class="form-check-label" for="conector2">Tipo 2</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="conector3">
+                    <label class="form-check-label" for="conector3">Tipo 3</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desplegable de Marca-->
+    
+    <!-- Botón de Filtrar búsqueda -->
+    <div class="mt-3">
+        <button type="button" class="btn btn-outline-primary w-100" id="filterSearchButton" onclick="filtersSearch(localStorage.getItem('origin'))">Filtrar búsqueda</button>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/map_search.js') }}"></script>   
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>      
+{% endblock scripts %}
+    
+
+  <!--  </script>-->
+

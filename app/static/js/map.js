@@ -2,17 +2,10 @@
 var currentRoute = null; 
 var distributors = [];
 
-//Inicializa el mapa
-/*document.addEventListener('DOMContentLoaded', function() {
-    var mapa = L.map('map').setView([40.416775, -3.703790], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 20
-    }).addTo(mapa);
-});*/
-
 
 //Inicialization of the map. The map is centered in Madrid, Spain
 var mapa = L.map('map').setView([40.416775, -3.703790], 6); 
+localStorage.setItem('map', mapa); // Guarda el valor en localStorage
 
 // Add the OpenStreetMap tiles to the map 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -78,79 +71,6 @@ function displayDistributor(data, tipo, w, h) {
 }
 
 
-function fetchAndDisplayRoute(event) {
-    event.preventDefault();
-    // Retrieve values from input fields
-    const origin = document.getElementById('origin').value;
-    const destination = document.getElementById('destination').value;
-    
-    // Check if the input fields are not empty
-    if (!origin || !destination) {
-        alert('Origen y destino son necesarios');
-        return;
-    }
 
-    // Append the parameters to the URL
-    const url = new URL('/search/get_route_with_distributors', window.location.origin);
-    url.searchParams.append('origin', origin);
-    url.searchParams.append('destination', destination);
-    //!!!Encodear
 
-    // Fetch the route using the updated URL with query parameters
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw new Error(err.error); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.route && data.distributors) {
-                displayRoute(data.route);
-                displayDistributor(data.distributors, data.tipo, 35, 35); 
-            } else {
-                alert('No se encontraron datos de ruta');
-            }
-        })
-        .catch(error => {
-            alert(error.message); 
-        });
-}
-
-function fetchAndDisplayNearest(event) {
-    event.preventDefault();
-    // Retrieve values from input fields
-    const origin = document.getElementById('origin').value;
-    
-    // Check if the input fields are not empty
-    if (!origin) {
-        alert('Origen necesario');
-        return;
-    }
-
-    // Append the parameters to the URL
-    const url = new URL('/search/get_nearest_distributors', window.location.origin);
-    url.searchParams.append('origin', origin);
-    //!!!Encodear
-
-    // Fetch the route using the updated URL with query parameters
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw new Error(err.error); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.distributors) {
-                mapa.setView([data.origin[0], data.origin[1]], 12); 
-                displayDistributor(data.distributors, data.tipo, 50, 50); 
-            } else {
-                alert('No se encontraron distribuidores cercanos');
-            }
-        })
-        .catch(error => {
-            alert(error.message); 
-        });
-}
 

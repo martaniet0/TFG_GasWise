@@ -1,0 +1,74 @@
+@media (max-width: 767px) {
+    body {
+        animation: slideUp 0.5s ease-out forwards;
+    }
+
+    @keyframes slideUp {
+        0% {
+            transform: translateY(100%);
+        }
+        100% {
+            transform: translateY(0);
+        }
+    }
+
+    header {
+        display: none;
+    }  
+    
+    body{
+        background: rgb(240, 240, 240);
+        overflow: hidden;
+    }
+
+    .close-button{
+        position: absolute; top: 10px; right: 10px; border: none; background: none;
+    }
+
+
+    #close-img{
+        height: 10px;
+        width: 10px;    
+    }
+}
+
+/* Estilos generales */
+body {
+    background-color: #f8f9fa; /* Ajusta a un color de fondo más claro, similar al de la imagen */
+}
+
+.container {
+    border: 1px solid #dee2e6; /* Añade un borde suave */
+    background-color: white; /* Asegura que el fondo del contenedor es blanco */
+}
+
+.btn-light {
+    border: 1px solid #dee2e6;
+    background-color: white;
+    color: black;
+    text-align: left;
+}
+
+.dropdown-menu {
+    width: 100%; /* Asegura que el menú desplegable ocupe todo el ancho */
+}
+
+.form-check-input {
+    margin-top: 0.3rem;
+    margin-left: 0.3rem;
+}
+
+.form-check-label {
+    margin-left: 2rem; /* Ajuste para alinear texto más a la derecha */
+}
+
+@media (min-width: 767px) {
+    .close-button{
+        position: absolute; top: 10px; right: 30px; border: none; background: none;
+    }
+
+    #close-img{
+        height: 30px;
+        width: 30px;    
+    }
+}
