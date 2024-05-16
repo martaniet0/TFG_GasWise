@@ -297,3 +297,13 @@ function filtersSearch(origin_param) {
     fetchAndDisplayNearest({preventDefault: () => {}}, origin, ...checkedInputs);
 
 }
+
+//Llama a la ruta que muestra la lista de distribuidores
+function getDistributorsList(){
+    window.location.href = '/search/get_distributors_list';
+}
+
+//Llama a la ruta que muestra más información de una gasolinera
+function moreInfo() {
+    window.location.href = '/search/info_distributor';
+}

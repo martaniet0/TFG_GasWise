@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Listado 
+{% endblock title %}
+
+<!--- AQUÍ PONGO SI QUIERO UN STYLE ESPECÍFICO PARA ESTA PÁGINA
+{% block styles %}
+    <link rel="stylesheet" href="../static/css/xxx.css">
+{% endblock styles %}
+--->
+
+{% block content %}
+    <div class="container">
+        <h1 class="my-4">Lista de Distribuidoras</h1>
+        <ul class="list-group .list-group-flush .active">
+            {% for distributor in distributors %}
+            <li class="list-group-item">
+                <h5><b>{{ distributor.Nombre }}</b></h5>
+                {% if distributor.Email %}
+                <p><b>Email:</b> {{ distributor.Email }}</p>
+                {% endif %}
+                {% if distributor.Tipo_venta %}
+                <p><b>Tipo de venta:</b> {{ distributor.Tipo_venta }}</p>
+                {% endif %}
+                {% if distributor.Horario %}
+                <p><b>Horario:</b> {{ distributor.Horario }}</p>
+                {% endif %}
+                {% if distributor.Margen %}
+                <p><b>Margen:</b> {{ distributor.Margen }}</p>
+                {% endif %}
+                {% if distributor.Precio %}
+                <p><b>Precio:</b> {{ distributor.Precio }}</p>
+                {% endif %}
+                <button class="btn btn-outline-secondary" onclick='moreInfo()'>Más información</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>    
+{% endblock content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/map_search.js') }}"></script>
+{% endblock scripts %}

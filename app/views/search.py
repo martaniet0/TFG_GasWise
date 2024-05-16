@@ -218,29 +218,84 @@ def get_distributor_info(lat, lon):
         return jsonify({'error': 'No se encontraron datos para la ubicación proporcionada'}), 400
 
     if data[2] == 'E':
-        tipo = 'Estación de recarga'
-    else:  
-        tipo = 'Gasolinera'
-    
-    if data[1] is not None: 
-        response = ("<b>Nombre:</b> " + data[0] + "<br>" + "<b>Latitud:</b> "  + lat + "<br>"  + "<b>Longitud:</b> " + lon + "<br>" + "<b>Email:</b> " + data[1] + "<br>" + "<b>Tipo:</b> " + tipo + "<br>")
+        response = {
+            'Nombre': data[0],
+            'Tipo_venta': data[3],
+            'Precio': data[4]
+        }
     else:
-        response = ("<b>Nombre:</b> " + data[0] + "<br>" + "<b>Latitud:</b> "  + lat + "<br>"  + "<b>Longitud:</b> " + lon + "<br>" + "<b>Tipo:</b> " + tipo + "<br>")
+        tipo_venta = 'Pública' if data[3] else 'Restringida a socios o cooperativistas'
+        margen = 'Derecho' if data[5] == 'D' else 'Izquierdo' if data[5] == 'I' else None
+        response = {
+            'Nombre': data[0],
+            'Tipo_venta': tipo_venta,
+            'Email': data[1],
+            'Horario': data[4],
+            'Margen': margen
+        }
 
-    response += "<button onclick='moreInfo()'>Más información</button>"
+    return jsonify(response)
 
-    return response
+#Ruta para obtener la info de un listado de distribuidoras
+@search_bp.route('/get_distributors_list', methods=['GET'])
+def get_distributors_list():
+    with open('app/json_data/nearest_distributors.json', 'r') as file:
+        data = json.load(file)
+
+    distributors_info = []
+
+    # Iterate through each coordinate set
+    for distributor in data["coordinates"]:
+        latitud = helpers.to_float(distributor[0])
+        longitud = helpers.to_float(distributor[1])
+        
+        distributor_data = db.get_distributor_data(latitud, longitud)
+        
+        # Append distributor info if available, else append None
+        if distributor_data:
+            distributors_info.append({
+                'lat': latitud,
+                'lon': longitud,
+                'info': distributor_data
+            })
+        else:
+            distributors_info.append({
+                'lat': latitud,
+                'lon': longitud,
+                'info': None
+            })
+
+    final_distributors_info = []
+
+    # Process each distributor info
+    for distributor in distributors_info:
+        info = distributor['info']
+        if info:
+            if info[2] == 'E':
+                distributor_info = {
+                    'Nombre': info[0],
+                    'Tipo_venta': info[3],
+                    'Precio': info[4]
+                }
+            else:
+                tipo_venta = 'Pública' if info[3] else 'Restringida a socios o cooperativistas'
+                margen = 'Derecho' if info[5] == 'D' else 'Izquierdo' if info[5] == 'I' else None
+                distributor_info = {
+                    'Nombre': info[0],
+                    'Tipo_venta': tipo_venta,
+                    'Email': info[1],
+                    'Horario': info[4],
+                    'Margen': margen
+                }
+            
+            final_distributors_info.append(distributor_info)
+
+    return render_template('distributors_list.html', distributors=final_distributors_info)
+
 
 #Ruta para obtener la información (completa) de una distribuidora
 #param: latitud y longitud
 #!!! sin terminar
-@search_bp.route('/info_gas_station')
-def info_gas_station():
+@search_bp.route('/info_distributor')
+def info_distributor():
     return render_template('info_distributor.html')
-
-#Ruta para selecionar los filtros de búsqueda
-#param: ?
-#!!! sin terminar
-@search_bp.route('/select', methods=['GET'])
-def select():
-    return render_template('distributors_filters.html')

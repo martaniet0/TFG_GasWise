@@ -1,9 +1,10 @@
 import re
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, select, func, cast
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
+from geoalchemy2 import functions as geofuncs
 
 
 from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador
@@ -504,6 +505,48 @@ def get_distributor_data(lat, lon):
     try:
         cur.execute(query)
         results = cur.fetchone()
+        with open('app/test/log.txt', 'w') as file:
+            json.dump(results, file, indent=4)
+        if (results and results[2] == 'G'):
+            query_gas_station = f"""
+            SELECT 
+            g."TipoVenta",
+            g."Horario",
+            g."Margen"
+            FROM "Gasolinera" g
+            WHERE g."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
+            """
+            cur.execute(query_gas_station)
+            results_gas_station = cur.fetchone()
+            results += results_gas_station
+        elif (results and results[2] == 'E'):
+            query_ev_station = f"""
+            SELECT 
+            e."TipoVenta",
+            e."Precio"
+            FROM "EstacionRecarga" e
+            WHERE e."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
+            """            
+            cur.execute(query_ev_station)
+            results_ev_station = cur.fetchone()
+            results += results_ev_station
+        else:
+            query =f"""
+                SELECT 
+                    d."Nombre",
+                    d."MailPropietario", 
+                    d."Tipo",
+                    e."TipoVenta",
+                    e."Precio"
+                FROM 
+                    "EstacionRecarga" e
+                JOIN 
+                    "Distribuidora" d ON e."IdDistribuidora" = d."IdDistribuidora"
+                WHERE 
+                    ST_DWithin(d."Location"::geography, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geography, 1);
+            """
+            cur.execute(query)
+            results = cur.fetchone()
         if results:
             return results 
         else:

@@ -28,10 +28,6 @@ function displayRoute(routeData) {
     mapa.fitBounds(currentRoute.getBounds());
 }
 
-function moreInfo() {
-    window.location.href = '/search/info_gas_station';
-}
-
 function displayDistributor(data, tipo, w, h) {
     distributors.forEach(function(marker) {
         mapa.removeLayer(marker);
@@ -52,7 +48,6 @@ function displayDistributor(data, tipo, w, h) {
     var coloredIcon = new iconoBase({iconUrl: tipo == "E" ? greenIconUrl : orangeIconUrl});
 
     data.coordinates.forEach(function(coord) {
-        //var marker = L.marker([coord[0], coord[1]]).addTo(mapa);
         var marker = L.marker([coord[0], coord[1]], {icon: coloredIcon}).addTo(mapa);
         
         marker.on('click', function(e) {
@@ -60,9 +55,27 @@ function displayDistributor(data, tipo, w, h) {
             var lon= e.latlng.lng;
             var url = '/search/get_distributor_info/' + lat + '/' + lon;
 
-            //jQuery to make an AJAX request to the server
             $.get(url, function(response) {
-                marker.bindPopup(response).openPopup();
+                var content = "<b>Nombre:</b> " + response.Nombre + "<br>";
+
+                if (response.Email) {
+                    content += "<b>Email:</b> " + response.Email + "<br>";
+                }
+                if (response['Tipo_venta']) {
+                    content += "<b>Tipo de venta:</b> " + response['Tipo_venta'] + "<br>";
+                }
+                if (response['Precio']){
+                    content += "<b>Precio:</b> " + response['Precio'] + "<br>";
+                }
+                if (response.Horario) {
+                    content += "<b>Horario:</b> " + response.Horario + "<br>";
+                }
+                if (response.Margen) {
+                    content += "<b>Margen:</b> " + response.Margen + "<br>";
+                }
+
+                content += "<button class='btn btn-outline-secondary' onclick='moreInfo()'>Más información</button>";
+                marker.bindPopup(content).openPopup();
             });
         });
 

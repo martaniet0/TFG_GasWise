@@ -36,10 +36,10 @@
                     <button class="btn btn-outline-secondary" type="button" id="nearestButton" onclick="resetToInitial()" style="display: none;">
                         <img src="{{ url_for('static', filename='img/nearest.png') }}" alt="Nearest" class="icon-select">
                     </button>
-                    <button class="btn btn-outline-secondary" type="button" id="selectButton" style="display: none;"> <!--data-url="{{ url_for('search.select') }}"-->
+                    <button class="btn btn-outline-secondary" type="button" id="selectButton" style="display: none;"> 
                         <img src="{{ url_for('static', filename='img/filters.png') }}" alt="Select" class="icon-select">
                     </button>
-                    <button class="btn btn-outline-secondary" type="button" id="listButton" style="display: none;">
+                    <button class="btn btn-outline-secondary" type="button" id="listButton" onclick="getDistributorsList()" style="display: none;">
                         <img src="{{ url_for('static', filename='img/list.png') }}" alt="List" class="icon-select">
                     </button>
                 </div>
