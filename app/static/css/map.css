@@ -186,5 +186,16 @@ main{
     display: block; /* Muestra el div cuando se activa esta clase */
 }
 
-
-
+/*VISUALIZACIÓN DE LAS POSIBLES LOCALIZACIONES*/
+.locations {
+    display: none; /* Oculta el div por defecto */
+    position: fixed; /* Posicionamiento fijo respecto al viewport */
+    top: 100px; /* 100px desde la parte superior */
+    right: 50px; /* 50px desde la derecha */
+    bottom: 50px; /* 50px desde la parte inferior */
+    left: 50px; /* 50px desde la izquierda */
+    background: rgba(255, 255, 255); /* Fondo semi-transparente, cambia el color y opacidad según necesites */
+    z-index: 1000; /* Asegura que el div esté sobre otros elementos */
+    transition: all 0.3s ease; /* Transición suave al mostrar y ocultar */
+    overflow: auto; 
+}

@@ -14,7 +14,7 @@ def to_float(n):
         return n_float
     except ValueError:
         return "No se pudo convertir el string a real", 400
-    
+      
 def extract_usage_cost_EV():
     try:
         usage_costs = []

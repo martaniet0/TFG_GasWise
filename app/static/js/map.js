@@ -12,6 +12,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(mapa);
 
+// Add the geocoder to the map for autocomplete
+//L.control.geocoder('pk.ba4ecf4dbb4d4cb89a54cb5d8d610e79').addTo(map);
 
 
 

@@ -1,6 +1,7 @@
 function enableDestinationInput() {
     const destinationInput = document.createElement("div");
     destinationInput.className = "form-group";
+    //!!!NUEVO
     destinationInput.innerHTML = `
         <label for="destination">Destino:</label>
         <input type="text" id="destination" class="form-control" placeholder="Introduce destino" required />
@@ -9,16 +10,19 @@ function enableDestinationInput() {
     document.querySelector(".input-group").appendChild(destinationInput);
     document.getElementById("routeButton").style.display = "none"; // Oculta el botón de ruta
     document.getElementById("nearestButton").style.display = "inline-block"; // Muestra el botón Nearest
-    document.getElementById("searchButton").setAttribute("onclick", "fetchAndDisplayRoute(event)"); 
+    //!!!NUEVO
+    document.getElementById("searchButton").setAttribute("onclick", "fetchLocations()"); 
     document.getElementById("filterSearchButton").setAttribute("onclick", "fetchAndDisplayRoute(event)");
     document.getElementById("listButton").style.display = "none"; 
 }
 
 function resetToInitial() {
+    //!!!NUEVO
     document.getElementById("destination")?.parentNode.remove(); // Elimina el campo de destino
     document.getElementById("nearestButton").style.display = "none"; // Oculta el botón Nearest
     document.getElementById("routeButton").style.display = "inline-block"; // Muestra el botón de ruta
-    document.getElementById("searchButton").setAttribute("onclick", "fetchAndDisplayNearest(event)"); // Restablece la acción original del botón de búsqueda
+    //!!!NUEVO
+    document.getElementById("searchButton").setAttribute("onclick", "fetchLocations()"); // Restablece la acción original del botón de búsqueda
     document.getElementById("filterSearchButton").setAttribute("onclick", "fetchAndDisplayNearest(event)");
     document.getElementById("listButton").style.display = "none"; // Ocultar listButton en reset
 }
@@ -123,6 +127,14 @@ function hideLoading() {
     document.getElementById('loadingOverlay').style.display = 'none';
 }
 
+function showLoading2() {
+    document.getElementById('loadingOverlay2').style.display = 'block';
+}
+
+function hideLoading2() {
+    document.getElementById('loadingOverlay2').style.display = 'none';
+}
+
 function fetchAndDisplayRoute(event) {
     event.preventDefault();
 
@@ -196,7 +208,7 @@ function fetchAndDisplayRoute(event) {
         });
 }
 
-function fetchAndDisplayNearest(event, additionalOrigin,  ...otherParams) {
+function fetchAndDisplayNearest(event,  ...otherParams) {
     event.preventDefault();
 
     showLoading();
@@ -290,8 +302,6 @@ function filtersSearch(origin_param) {
             checkedInputs.push(input.id); 
         }
     });
-
-    console.log("Param" + origin_param)
     origin=origin_param;
 
     fetchAndDisplayNearest({preventDefault: () => {}}, origin, ...checkedInputs);
@@ -306,4 +316,95 @@ function getDistributorsList(){
 //Llama a la ruta que muestra más información de una gasolinera
 function moreInfo() {
     window.location.href = '/search/info_distributor';
+}
+
+//!!!NUEVO
+
+function fetchLocations() {
+    showLoading2();
+    const origin = document.getElementById('origin').value;
+
+    if (!origin) {
+        alert('Por favor, introduce un origen');
+        return;
+    }
+
+    const url = new URL('/search/get_locations', window.location.origin);
+    url.searchParams.append('origin', origin);
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.places && data.places.length > 0) {
+                updateLocationListTitle('Elija la ubicación del origen');
+                const placesList = document.getElementById('places-list');
+                placesList.innerHTML = ''; // Limpiar lista previa
+                data.places.forEach(place => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    listItem.innerHTML = place.Nombre ? `<p>${place.Nombre}</p>` : '';
+                    listItem.addEventListener('click', () => handlePlaceClick(place.Nombre));
+                    placesList.appendChild(listItem);
+                });
+                document.getElementById('location-list').style.display = 'block';
+                hideLoading2();
+            } else {
+                alert('No se encontraron ubicaciones');
+            }
+        })
+        .catch(error => {
+            alert('Error al buscar ubicaciones: ' + error.message);
+        });
+}
+
+function handlePlaceClick(placeName) {
+    document.getElementById('origin').value = placeName;
+    document.getElementById('location-list').style.display = 'none';
+
+    const destination = document.getElementById('destination');
+    if (destination && destination.value) {
+        fetchDestinationLocations(destination.value);
+    } else {
+        fetchAndDisplayNearest({ preventDefault: () => {} });
+    }
+}
+
+function fetchDestinationLocations(destination) {
+    showLoading2();
+    const url = new URL('/search/get_locations', window.location.origin);
+    url.searchParams.append('destination', destination);
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.places && data.places.length > 0) {
+                updateLocationListTitle('Elija la ubicación del destino');
+                const placesList = document.getElementById('places-list');
+                placesList.innerHTML = ''; // Limpiar lista previa
+                data.places.forEach(place => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    listItem.innerHTML = place.Nombre ? `<p>${place.Nombre}<p>` : '';
+                    listItem.addEventListener('click', () => handleDestinationClick(place.Nombre));
+                    placesList.appendChild(listItem);
+                });
+                document.getElementById('location-list').style.display = 'block';
+                hideLoading2();
+            } else {
+                alert('No se encontraron ubicaciones');
+            }
+        })
+        .catch(error => {
+            alert('Error al buscar ubicaciones: ' + error.message);
+        });
+}
+
+function handleDestinationClick(placeName) {
+    document.getElementById('destination').value = placeName;
+    document.getElementById('location-list').style.display = 'none';
+    fetchAndDisplayRoute({ preventDefault: () => {} });
+}
+
+function updateLocationListTitle(title) {
+    document.getElementById('location-list-title').innerText = title;
 }

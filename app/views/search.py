@@ -299,3 +299,32 @@ def get_distributors_list():
 @search_bp.route('/info_distributor')
 def info_distributor():
     return render_template('info_distributor.html')
+
+#!!!NUEVO
+#Ruta para obtener posibles localizaciones de un lugar
+@search_bp.route('/get_locations', methods=['GET'])
+def get_locations():
+    place_name = request.args.get('origin') or request.args.get('destination')
+    
+    if not place_name:
+        return jsonify({'error': 'Parámetro "origin" o "destination" es necesario'}), 400
+
+    # Obtener locations.json
+    get_coordinates(place_name)
+
+    # Leer el archivo locations.json
+    with open('app/json_data/locations.json', 'r', encoding='utf-8') as f:
+        locations = json.load(f)
+    
+    filtered_places = []
+
+    for location in locations:
+        lat = location['lat']
+        lon = location['lon']
+        country = get_country(lat,lon)
+        if country == 'es':
+            filtered_places.append({
+                'Nombre': location['display_name']
+            })
+
+    return jsonify({'places': filtered_places})
