@@ -1,13 +1,16 @@
 import re
 
-from sqlalchemy import create_engine, text, select, func, cast
-from sqlalchemy.orm import sessionmaker
+from flask import flash
+
+from sqlalchemy import create_engine, text, select, func, cast, and_
+from sqlalchemy.orm import sessionmaker, aliased
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import functions as geofuncs
+from flask_login import current_user
 
 
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor
 
 import app.views.search as search
 import app.views.helpers as helpers
@@ -51,6 +54,23 @@ services = {
     13: "vaciado_aguas_negras",
     14: "estacion_accesible", 
     15: "cafeteria"
+}
+
+service_icons = {v: k for k, v in services.items()}
+
+services_names = {
+    "hospedaje": "Hospedaje",
+    "lavado_coches": "Lavado de coches",
+    "lavado_camiones": "Lavado de camiones",
+    "parking_camiones": "Parking para camiones",
+    "cambiapaniales": "Cambiador de pañales",
+    "duchas": "Duchas",
+    "supermercado": "Supermercado",
+    "amazon_locker": "Amazon Locker",
+     "citypaq": "Correos CityPaq",
+    "vaciado_aguas_negras": "Vaciado de aguas negras",
+    "estacion_accesible": "Estación accesible", 
+    "cafeteria": "Cafetería" #le he quitado una coma
 }
 
 fuel = {
@@ -489,9 +509,30 @@ def get_nearest_distributors(lat, lon, tipo, **kwargs):
 
 #Get distributor info 
 #!!! Con SQL pq con GeoAlchemy no me sale
-def get_distributor_data(lat, lon):
+def get_distributor_data(lat, lon, id):
     conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")#!!!
     cur = conn.cursor()
+    lat=lat
+    lon=lon
+
+    if id != None:
+        with open('app/test/log.txt', 'a') as file:
+            file.write("Hola?")
+        query_location = """
+                        SELECT
+                        ST_Y("Location"::geometry) AS latitude,
+                        ST_X("Location"::geometry) AS longitude
+                        FROM
+                            public."Distribuidora"
+                        WHERE
+                            "IdDistribuidora" = %s;"""
+        cur.execute(query_location, (id,))
+        results_location = cur.fetchone()
+        lat = results_location[0]
+        lon = results_location[1]
+
+    with open('app/test/log.txt', 'a') as file:
+        file.write(f"Id: {id}, Latitud: {lat}, Longitud: {lon}\n")
 
     query = f"""
     SELECT 
@@ -505,14 +546,13 @@ def get_distributor_data(lat, lon):
     try:
         cur.execute(query)
         results = cur.fetchone()
-        with open('app/test/log.txt', 'w') as file:
-            json.dump(results, file, indent=4)
         if (results and results[2] == 'G'):
             query_gas_station = f"""
             SELECT 
             g."TipoVenta",
             g."Horario",
-            g."Margen"
+            g."Margen",
+            g."IdDistribuidora"
             FROM "Gasolinera" g
             WHERE g."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
             """
@@ -523,7 +563,8 @@ def get_distributor_data(lat, lon):
             query_ev_station = f"""
             SELECT 
             e."TipoVenta",
-            e."Precio"
+            e."Precio",
+            e."IdDistribuidora"
             FROM "EstacionRecarga" e
             WHERE e."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
             """            
@@ -537,7 +578,8 @@ def get_distributor_data(lat, lon):
                     d."MailPropietario", 
                     d."Tipo",
                     e."TipoVenta",
-                    e."Precio"
+                    e."Precio",
+                    e."IdDistribuidora"
                 FROM 
                     "EstacionRecarga" e
                 JOIN 
@@ -548,7 +590,7 @@ def get_distributor_data(lat, lon):
             cur.execute(query)
             results = cur.fetchone()
         if results:
-            return results 
+            return results, lat, lon 
         else:
             return None
     except psycopg2.Error as e:
@@ -557,3 +599,311 @@ def get_distributor_data(lat, lon):
     finally:
         cur.close()
         conn.close()
+
+#Obtener los combustibles y precios de una gasolinera
+def get_gas_station_prices(lat, lon):
+    with session_scope() as session:
+        # Subconsulta para encontrar la gasolinera más cercana a las coordenadas dadas
+        gasolinera_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        gasolinera_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            gasolinera_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        
+        # Consulta principal para obtener los tipos de combustibles y sus precios
+        results = (session.query(
+                        TipoCombustible.Nombre.label('combustible'),
+                        SuministraGasolinera.Precio.label('precio')
+                    )
+                    .join(SuministraGasolinera, SuministraGasolinera.IdCombustible == TipoCombustible.IdCombustible)
+                    .join(subquery, subquery.c.IdDistribuidora == SuministraGasolinera.IdDistribuidora)
+                    .all())
+        
+        return [{'combustible': result.combustible, 'precio': result.precio} for result in results]
+    
+#Obtener los servicios de una gasolinera
+def get_gas_station_services(lat, lon):
+    with session_scope() as session:
+        #Consulta la gasolinera correspondiente a la coordenadas dadas
+        #Obtener los servicios de esa gasolinera, si estan verificados y si tienen porcentaje cual es
+        gasolinera_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        gasolinera_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            gasolinera_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        # Consulta principal para obtener los servicios
+        results = (session.query(
+                        Servicio.Nombre.label('servicio'),
+                        ServiciosGasolinera.Verificado.label('verificado'),
+                        ServiciosGasolinera.Porcentaje.label('porcentaje'),
+                        ServiciosGasolinera.Existe.label('existe')
+                    )
+                    .join(ServiciosGasolinera, ServiciosGasolinera.IdServicio == Servicio.IdServicio)
+                    .join(subquery, subquery.c.IdDistribuidora == ServiciosGasolinera.IdDistribuidora)
+                    .filter(ServiciosGasolinera.Existe == True)
+                    .all())
+        
+        #return [{'servicio': services_names.get(result.servicio, result.servicio), 'verificado': result.verificado, 'porcentaje': result.porcentaje, 'icono': services.get(result.servicio, result.servicio)} for result in results]
+        result_list = [
+            {
+                'servicio': services_names.get(result.servicio, result.servicio),
+                'verificado': result.verificado,
+                'porcentaje': round(result.porcentaje, 2) if result.porcentaje else None,
+                'icono': service_icons.get(result.servicio), 
+                'existe': result.existe
+            } 
+            for result in results
+        ]
+
+        return result_list
+    
+#Obtener las preguntas y respuestas de una distribuidora
+def get_questions(lat, lon):
+    with session_scope() as session:
+        distribuidora_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        distribuidora_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            distribuidora_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        preguntas = (session.query(
+                        Pregunta.IdPregunta,
+                        Pregunta.MailConductor.label('mail_pregunta'),
+                        Pregunta.TextoPregunta.label('pregunta'),
+                        Pregunta.Fecha.label('fecha_pregunta'),
+                        Pregunta.Hora.label('hora_pregunta')
+                    )
+                    .join(subquery, subquery.c.IdDistribuidora == Pregunta.IdDistribuidora)
+                    .all())
+        
+        pregunta_list = []
+        respuesta_list = []
+
+        for pregunta in preguntas:
+            conductor_pregunta = session.query(Conductor).filter(Conductor.MailConductor == pregunta.mail_pregunta).first()
+            nombre_completo_pregunta = f"{conductor_pregunta.Nombre} {conductor_pregunta.Apellidos}" if conductor_pregunta.Apellidos else f"{conductor_pregunta.Nombre}"
+            
+            pregunta_list.append({
+                'id_pregunta': pregunta.IdPregunta,
+                'mail_pregunta': nombre_completo_pregunta,
+                'pregunta': pregunta.pregunta,
+                'fecha_pregunta': pregunta.fecha_pregunta,
+                'hora_pregunta': pregunta.hora_pregunta
+            })
+            
+            respuestas = (session.query(
+                            Respuesta.MailPropietario.label('mail_propietario_respuesta'),
+                            Respuesta.MailConductor.label('mail_conductor_respuesta'),
+                            Respuesta.TextoRespuesta.label('respuesta'),
+                            Respuesta.Fecha.label('fecha_respuesta'),
+                            Respuesta.Hora.label('hora_respuesta'),
+                            Respuesta.Verificada.label('verificada'),
+                            Respuesta.IdPregunta.label('id_pregunta')
+                        )
+                        .filter(Respuesta.IdPregunta == pregunta.IdPregunta)
+                        .all())
+            
+            for respuesta in respuestas:
+                if respuesta.mail_conductor_respuesta:
+                    conductor_respuesta = session.query(Conductor).filter(Conductor.MailConductor == respuesta.mail_conductor_respuesta).first()
+                    nombre_completo_respuesta = f"{conductor_respuesta.Nombre} {conductor_respuesta.Apellidos}" if conductor_respuesta.Apellidos else f"{conductor_respuesta.Nombre}"
+                else:
+                    propietario_respuesta = session.query(Propietario).filter(Propietario.MailPropietario == respuesta.mail_propietario_respuesta).first()
+                    nombre_completo_respuesta = f"{propietario_respuesta.Nombre} {propietario_respuesta.Apellidos}" if propietario_respuesta.Apellidos else f"{propietario_respuesta.Nombre}"
+
+                respuesta_list.append({
+                    'id_pregunta': respuesta.id_pregunta,
+                    'mail_respuesta': nombre_completo_respuesta,
+                    'respuesta': respuesta.respuesta,
+                    'fecha_respuesta': respuesta.fecha_respuesta,
+                    'hora_respuesta': respuesta.hora_respuesta,
+                    'verificada': respuesta.verificada
+                })
+        
+        return pregunta_list, respuesta_list
+    
+#Obtener las valoraciones de una distribuidora
+def get_ratings(lat, lon):
+    with session_scope() as session:
+        distribuidora_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        distribuidora_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            distribuidora_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        valoraciones = (session.query(
+                        Valoracion.Puntuacion.label('puntuacion'),
+                        Valoracion.Texto.label('texto'),
+                        Valoracion.MailConductor.label('mail_valoracion')
+                    )
+                    .join(subquery, subquery.c.IdDistribuidora == Valoracion.IdDistribuidora)
+                    .all())
+        
+        valoracion_list = []
+        
+        for valoracion in valoraciones:
+            local_session = Session()
+            conductor_valoracion = local_session.query(Conductor).filter(Conductor.MailConductor == valoracion.mail_valoracion).first()
+            local_session.close()
+            nombre_completo_valoracion = f"{conductor_valoracion.Nombre} {conductor_valoracion.Apellidos}" if conductor_valoracion.Apellidos else f"{conductor_valoracion.Nombre}"
+            valoracion_list.append({
+                'puntuacion': valoracion.puntuacion,
+                'texto': valoracion.texto,
+                'nombre': nombre_completo_valoracion
+            })
+
+        valoracion_media = session.query(func.avg(Valoracion.Puntuacion)).filter(subquery.c.IdDistribuidora == Valoracion.IdDistribuidora).scalar()
+        valoracion_media = round(valoracion_media, 2) if valoracion_media else None
+
+        return valoracion_list, valoracion_media
+    
+#Insertar valoración de un conductor en la BD 
+def insert_rating(id_distribuidora, puntuacion, texto, mail_conductor):
+    with session_scope() as session:
+        try: 
+            nueva_valoracion = Valoracion(
+                Puntuacion=puntuacion,
+                Texto=texto,
+                IdDistribuidora=id_distribuidora,
+                MailConductor=mail_conductor
+            )
+
+            session.add(nueva_valoracion)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+
+def insert_db_services(distributor_id, selected_services):
+    with session_scope() as session:
+        try:
+            # Insertar los servicios indicados en IndicaServicioConductor
+            for service_key, service_value in selected_services.items():
+                existe = True if service_value == 'yes' else False
+                service_id = next(key for key, value in services.items() if value == service_key)
+
+                new_service = IndicaServicioConductor(
+                    IdServicio=service_id,
+                    MailConductor=current_user.MailConductor,
+                    IdDistribuidora=distributor_id,
+                    Existe=existe
+                )
+                session.add(new_service)
+
+            session.commit()
+
+            # !!! Si solo un usuario indica un servicio en una gasolinera aparece que el 100% de los usuarios lo asegura aun que otros haya puesto que no saben
+            for service_key, service_value in selected_services.items():
+                service_id = next(key for key, value in services.items() if value == service_key)
+
+                # Calcular los valores de Existe y Porcentaje
+                #Busca todas las tuplas que tengan hayan sido indicadas para ese servicio en esa gasolinera
+                total_tuples = session.query(IndicaServicioConductor).filter(
+                    and_(
+                        IndicaServicioConductor.IdServicio == service_id,
+                        IndicaServicioConductor.IdDistribuidora == distributor_id
+                    )
+                ).count()
+
+                #Busca todas los "existe" para ese servicio en esa gasolinera
+                x_counter = session.query(IndicaServicioConductor).filter(
+                    and_(
+                        IndicaServicioConductor.IdServicio == service_id,
+                        IndicaServicioConductor.IdDistribuidora == distributor_id,
+                        IndicaServicioConductor.Existe == True
+                    )
+                ).count()
+
+                #Busca todos los "no existe" para ese servicio en esa gasolinera
+                x_counter -= session.query(IndicaServicioConductor).filter(
+                    and_(
+                        IndicaServicioConductor.IdServicio == service_id,
+                        IndicaServicioConductor.IdDistribuidora == distributor_id,
+                        IndicaServicioConductor.Existe == False
+                    )
+                ).count()
+
+                if x_counter > 0:
+                    existe = True
+                    porcentaje = (x_counter / total_tuples) * 100
+                elif x_counter < 0:
+                    existe = False
+                    porcentaje = None
+                else:
+                    existe = None
+                    porcentaje = None
+
+                # Buscar si ya existe la entrada en ServiciosGasolinera
+                existing_service = session.query(ServiciosGasolinera).filter(
+                    and_(
+                        ServiciosGasolinera.IdServicio == service_id,
+                        ServiciosGasolinera.IdDistribuidora == distributor_id
+                    )
+                ).first()
+
+                if existing_service:
+                    # Si existe, actualizar la entrada
+                    existing_service.Verificado = False
+                    existing_service.Existe = existe
+                    existing_service.Porcentaje = porcentaje
+                else:
+                    # Si no existe, crear una nueva entrada
+                    new_gas_station_service = ServiciosGasolinera(
+                        IdServicio=service_id,
+                        IdDistribuidora=distributor_id,
+                        Verificado=False,
+                        Existe=existe,
+                        Porcentaje=porcentaje
+                    )
+                    session.add(new_gas_station_service)
+
+            session.commit()
+            flash('Servicios indicados correctamente', 'success')
+
+        except IntegrityError:
+            flash('Ya has indicado anteriormente los servicios para esta gasolinera. Solo se puede hacer una vez', 'danger')
+            session.rollback()
+
+#Insertar una respuesta en la BD
+def insert_db_answer(id_pregunta, texto_respuesta, mail_conductor, mail_propietario, fecha, hora, verificada):
+    with session_scope() as session:
+        try:
+            nueva_respuesta = Respuesta(
+                IdPregunta=id_pregunta,
+                TextoRespuesta=texto_respuesta,
+                MailConductor=mail_conductor,
+                MailPropietario=mail_propietario,
+                Fecha=fecha,
+                Hora=hora,
+                Verificada=verificada
+            )
+
+            session.add(nueva_respuesta)
+            session.commit()
+        except IntegrityError:
+            session.rollback()

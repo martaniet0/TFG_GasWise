@@ -212,6 +212,11 @@ function fetchAndDisplayNearest(event,  ...otherParams) {
     event.preventDefault();
 
     showLoading();
+    
+    if(currentRoute){
+        mapa.removeLayer(currentRoute);
+    }
+    
 
     document.getElementById("listButton").style.display = "inline-block";
     document.getElementById("selectButton").style.display = "inline-block";
@@ -314,8 +319,8 @@ function getDistributorsList(){
 }
 
 //Llama a la ruta que muestra más información de una gasolinera
-function moreInfo() {
-    window.location.href = '/search/info_distributor';
+function moreInfo(lat, lon) {
+    window.location.href = `/distributor/distributor_info?lat=${lat}&lon=${lon}`;
 }
 
 //!!!NUEVO

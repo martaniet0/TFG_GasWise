@@ -35,14 +35,6 @@ class Conductor(db.Model, UserMixin):
     def get_id(self):
         return self.MailConductor
     
-class DaRespuestaConductor(db.Model):
-    __tablename__ = 'DaRespuestaConductor'
-
-    MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), primary_key=True)
-    IdRespuesta = Column(Integer, ForeignKey('Respuesta.IdRespuesta'), primary_key=True)
-    Fecha = Column(Date, nullable=False)
-    Hora = Column(Time, nullable=False)
-
 class Valoracion(db.Model):
     __tablename__ = 'Valoracion'
 
@@ -51,14 +43,6 @@ class Valoracion(db.Model):
     Texto = Column(String(500))
     IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), nullable=False)
     MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), nullable=False)
-
-class DaRespuestaPropietario(db.Model):
-    __tablename__ = 'DaRespuestaPropietario'
-
-    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'), primary_key=True)
-    IdRespuesta = Column(Integer, ForeignKey('Respuesta.IdRespuesta'), primary_key=True)
-    Fecha = Column(Date, nullable=False)
-    Hora = Column(Time, nullable=False)
 
 class Distribuidora(db.Model):
     __tablename__ = 'Distribuidora'
@@ -94,13 +78,7 @@ class IndicaServicioConductor(db.Model):
 
     IdServicio = Column(Integer, ForeignKey('Servicio.IdServicio'), primary_key=True)
     MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), primary_key=True)
-    Existe = Column(Boolean, nullable=False)
-
-class IndicaServicioPropietario(db.Model):
-    __tablename__ = 'IndicaServicioPropietario'
-
-    IdServicio = Column(Integer, ForeignKey('Servicio.IdServicio'), primary_key=True)
-    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'), primary_key=True)
+    IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), primary_key=True)
     Existe = Column(Boolean, nullable=False)
 
 class MarcaFavorita(db.Model):
@@ -113,7 +91,9 @@ class Pregunta(db.Model):
     __tablename__ = 'Pregunta'
 
     IdPregunta = Column(Integer, primary_key=True)
-    Texto = Column(String(500), nullable=False)
+    TextoPregunta = Column(String(500), nullable=False) #!!!Revisar si es String
+    Fecha = Column(Date, nullable=False) #!!!Revisar si es Date
+    Hora = Column(Time, nullable=False) #!!!Revisar si es Time
     IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), nullable=False)
     MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), nullable=False)
 
@@ -139,14 +119,25 @@ class Propietario(db.Model, UserMixin):
     def is_active(self, value):
         self.Activo = value
 
+class PoseeDistribuidora(db.Model):
+    __tablename__ = 'PoseeDistribuidora'
+
+    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'), primary_key=True)
+    IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), primary_key=True)
+
+
 class Respuesta(db.Model):
     __tablename__ = 'Respuesta'
 
     IdRespuesta = Column(Integer, primary_key=True)
+    TextoRespuesta = Column(String(500), nullable=False)#!!!Revisar si es String
+    Fecha = Column(Date, nullable=False)#!!!Revisar si es Date
+    Hora = Column(Time, nullable=False)#!!!Revisar si es Time
+    Verificada = Column(Boolean, nullable=False)
     IdPregunta = Column(Integer, ForeignKey('Pregunta.IdPregunta'), nullable=False)
-    Texto = Column(String(500), nullable=False)
-    Verificado = Column(Boolean)
-
+    MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'))
+    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'))
+    
 
 class Servicio(db.Model):
     __tablename__ = 'Servicio'
@@ -161,6 +152,7 @@ class ServiciosGasolinera(db.Model):
     IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), primary_key=True)
     Verificado = Column(Boolean)
     Existe = Column(Boolean)
+    Porcentaje = Column(Numeric)
 
 class SuministraEstacionRecarga(db.Model):
     __tablename__ = 'SuministraEstacionRecarga'

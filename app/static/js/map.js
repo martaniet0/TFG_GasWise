@@ -76,7 +76,7 @@ function displayDistributor(data, tipo, w, h) {
                     content += "<b>Margen:</b> " + response.Margen + "<br>";
                 }
 
-                content += "<button class='btn btn-outline-secondary' onclick='moreInfo()'>Más información</button>";
+                content += `<button class='btn btn-outline-secondary' onclick='moreInfo(${lat}, ${lon})'>Más información</button>`;
                 marker.bindPopup(content).openPopup();
             });
         });

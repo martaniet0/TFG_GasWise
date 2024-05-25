@@ -139,6 +139,36 @@ main {
     margin-bottom: 20px;
   }
 
+.btn-custome{
+    background-color: #fff;
+    color: #01726d;
+    border: 1px solid #01726d;
+
+}
+
+.link-custome{
+    color: #01726d !important;
+}
+
+#small{
+    font-size: smaller;
+    padding: 5px;
+}
+
+.btn-custome:hover{
+    background-color: #01726d;
+    color: white;
+    border: 1px solid #01726d;
+}
+
+.btn-custome:not(:disabled):not(.disabled).active{
+    background-color: #01726d;
+    color: white;
+    border: 1px solid #01726d;
+}
+
+
+
 @media (max-width: 767px) {
     .icon {
         width: 20px;     

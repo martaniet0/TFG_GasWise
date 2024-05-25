@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Servicios
+{% endblock title %}
+
+
+
+{% block content %}
+    <div class="container my-5">
+        <h2>Servicios</h2>
+        <form action="{{ url_for('distributor.services', distributor_id=distributor_id) }}" method="post">
+            <label class="mb-5">Por favor, indique si la gasolinera ofrece los siguientes servicios:</label>
+            {% for key, value in services.items() %}
+            <div class="form-group row">
+                <label class="col-sm-4 col-form-label font-weight-bold">{{ value }}</label>
+                <div class="col-sm-8">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline-secondary btn-custome">
+                            <input type="radio" name="{{ key }}" value="yes" autocomplete="off"> Sí
+                        </label>
+                        <label class="btn btn-outline-secondary btn-custome">
+                            <input type="radio" name="{{ key }}" value="no" autocomplete="off"> No
+                        </label>
+                        <label class="btn btn-outline-secondary btn-custome">
+                            <input type="radio" name="{{ key }}" value="unknown" autocomplete="off"> No sabe
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-outline-secondary btn-custome">Enviar</button>
+        </form>
+    </div>
+{% endblock content %}
+
+{ % block scripts % }
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+{ % endblock scripts % }

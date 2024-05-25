@@ -212,7 +212,7 @@ def get_nearest_distributors():
 #param: latitud y longitud
 @search_bp.route('/get_distributor_info/<lat>/<lon>')
 def get_distributor_info(lat, lon):
-    data = db.get_distributor_data(lat, lon)
+    data, lat, lon = db.get_distributor_data(lat, lon, None)
 
     if data is None:
         return jsonify({'error': 'No se encontraron datos para la ubicación proporcionada'}), 400
@@ -275,7 +275,9 @@ def get_distributors_list():
                 distributor_info = {
                     'Nombre': info[0],
                     'Tipo_venta': info[3],
-                    'Precio': info[4]
+                    'Precio': info[4], 
+                    'lat': distributor['lat'],
+                    'lon': distributor['lon']
                 }
             else:
                 tipo_venta = 'Pública' if info[3] else 'Restringida a socios o cooperativistas'
@@ -285,20 +287,14 @@ def get_distributors_list():
                     'Tipo_venta': tipo_venta,
                     'Email': info[1],
                     'Horario': info[4],
-                    'Margen': margen
+                    'Margen': margen,  
+                    'lat': distributor['lat'],
+                    'lon': distributor['lon']
                 }
             
             final_distributors_info.append(distributor_info)
 
     return render_template('distributors_list.html', distributors=final_distributors_info)
-
-
-#Ruta para obtener la información (completa) de una distribuidora
-#param: latitud y longitud
-#!!! sin terminar
-@search_bp.route('/info_distributor')
-def info_distributor():
-    return render_template('info_distributor.html')
 
 #!!!NUEVO
 #Ruta para obtener posibles localizaciones de un lugar

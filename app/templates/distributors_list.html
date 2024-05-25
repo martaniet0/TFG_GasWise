@@ -32,7 +32,9 @@
                 {% if distributor.Precio %}
                 <p><b>Precio:</b> {{ distributor.Precio }}</p>
                 {% endif %}
-                <button class="btn btn-outline-secondary" onclick='moreInfo()'>Más información</button>
+
+                <button class="btn btn-outline-secondary" onclick="moreInfo('{{ distributor.lat }}', '{{ distributor.lon }}')">Más información</button>
+            
             </li>
             {% endfor %}
         </ul>
