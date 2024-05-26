@@ -40,13 +40,13 @@
                 </div>
             </fieldset>
             <div class="form-group">
-                {{ form.submit(class="btn btn-outline-info") }}
+                {{ form.submit(class="btn btn-custome btn-outline-info") }}
             </div>
         </form>
     </div>
     <div class="border-top pt-3">
         <small class="text-muted">
-            ¿Todavía no tienes cuenta? <a class="ml-2" href="{{ url_for('users.register') }}">Registrarse</a>
+            ¿Todavía no tienes cuenta? <a class="ml-2 link-custome" href="{{ url_for('users.register') }}">Registrarse</a>
         </small>
     </div>
 {% endblock %}

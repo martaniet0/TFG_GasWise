@@ -72,6 +72,7 @@ class Gasolinera(db.Model):
     TipoVenta = Column(Boolean)
     Horario = Column(String(255))
     Margen = Column(String(1))
+    ServiciosVerificados = Column(Boolean)
 
 class IndicaServicioConductor(db.Model):
     __tablename__ = 'IndicaServicioConductor'

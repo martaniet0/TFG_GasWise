@@ -3,19 +3,30 @@ from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, TextAreaField, HiddenField, SubmitField, SelectField, StringField
 from wtforms.validators import DataRequired, Optional, ValidationError
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 import app.views.database as db
 import app.views.helpers as helpers
 import json
 import requests 
-from flask_login import current_user
+import pytz
 
 distributor_bp = Blueprint('distributor', __name__)
 
 headers = {
     'User-Agent': 'gasWise/1.0',
     'Referer': 'http://gaswise.com'
+}
+
+venta = {
+    "Private - Restricted Access": "Privada",
+    "Public - Notice Required": "Pública - Requiere aviso",
+    "Public": "Pública",
+    "(Unknown)": "-",
+    "Public - Pay At Location": "Pública - Pago en el lugar",
+    "Private - For Staff, Visitors or Customers": "Privada - Para personal, visitantes o clientes",
+    "Privately Owned - Notice Required": "Privada - Requiere aviso",
+    "Public - Membership Required": "Pública - Requiere afiliación"
 }
 
 class RatingForm(FlaskForm):
@@ -38,12 +49,13 @@ def distributor_details(lat, lon, id):
     tipo = info[2]
 
     if tipo == 'E':
+        tipo_venta = venta.get(info[3], "-")
         response = {
             'Nombre': info[0],
-            'Tipo_venta': info[3],
-            'Precio': info[4], #!!!
+            'Tipo_venta': tipo_venta,
+            'Precio': info[4], 
             'Tipo': tipo, 
-            'Id_distribuidora': info[4]
+            'Id_distribuidora': info[5]
         }
     else:
         tipo_venta = 'Pública' if info[3] else 'Restringida a socios o cooperativistas'
@@ -55,14 +67,15 @@ def distributor_details(lat, lon, id):
             'Horario': info[4],
             'Margen': margen,
             'Tipo': tipo, 
-            'Id_distribuidora': info[6]
+            'Id_distribuidora': info[6], 
+            'Servicios_verificados': info[7]
         }
         
     response.update({'Direccion': get_address(lat, lon)})
     return response, tipo, lat, lon
 
 
-#Ruta para mostrar la informacion de una distribuidora
+#Ruta para mostrar la informacion de una distribuidora tanto a un conductor como a un propietario
 @distributor_bp.route('/distributor_info', methods=['GET', 'POST'])
 @distributor_bp.route('/distributor_info/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -91,10 +104,11 @@ def distributor_info(id=None):
     # Combustibles y precios (si gasolinera)
     precios = db.get_gas_station_prices(latitud, longitud) if tipo == 'G' else []
 
+    #Puntos de recarga (si estación de recarga)
+    puntos_recarga = db.get_charge_points(latitud, longitud) if tipo == 'E' else []
+
     # Servicios (si estación de recarga)
     servicios = db.get_gas_station_services(latitud, longitud) if tipo == 'G' else []
-    with open('app/test/log.txt', 'w') as f:
-        f.write(f'\n Aquí no estoy llegando\n')
 
     # Preguntas y respuestas
     preguntas, respuestas = db.get_questions(latitud, longitud)
@@ -102,24 +116,54 @@ def distributor_info(id=None):
     # Valoraciones
     valoraciones, valoracion_media = db.get_ratings(latitud, longitud)
 
-    return render_template('info_distributor.html', form=form, tipo=tipo, distributor=info, precios=precios, servicios=servicios, preguntas=preguntas, respuestas=respuestas, valoraciones=valoraciones, valoracion_media=valoracion_media)
+    #Tipo de usuario que quiere acceder a la página
+    user_type = helpers.user_type() 
 
+    return render_template('info_distributor.html', form=form, tipo=tipo, distributor=info, precios=precios, puntos_recarga=puntos_recarga, servicios=servicios, preguntas=preguntas, respuestas=respuestas, valoraciones=valoraciones, valoracion_media=valoracion_media, user_type=user_type)
+
+#Ruta para mostrar el formulario para indicar los servicios de una distribuidora
 @distributor_bp.route('/service/form/<int:distributor_id>')
 def service_form(distributor_id):
     services = db.services_names
-    return render_template('service_form.html', distributor_id=distributor_id, services=services)
+    user_type = helpers.user_type()
 
+    return render_template('service_form.html', distributor_id=distributor_id, services=services, user_type=user_type)
 
+#Ruta para indicar los servicios de una gasolinera
 @distributor_bp.route('/distributor/services/<int:distributor_id>', methods=['POST'])
 @login_required
 def services(distributor_id):
     selected_services = {key: request.form[key] for key in request.form if request.form[key] != 'unknown'}
     
+    user_type = helpers.user_type() 
     # Procesar los servicios (por ejemplo, insertarlos en la base de datos)
-    db.insert_db_services(distributor_id, selected_services)
+    if user_type == "C":
+        db.insert_db_services_driver(distributor_id, selected_services)
+    else:
+        db.insert_db_services_owner(distributor_id, selected_services)
     
     return redirect(url_for('distributor.distributor_info', id=distributor_id))
 
+#Ruta para enviar una pregunta
+@distributor_bp.route('/question', methods=['GET', 'POST'])
+@login_required
+def question():
+    texto_pregunta = request.form['pregunta']
+    id_distribuidora = request.form['id_distribuidora']
+    
+    # Obtener la fecha y la hora actuales
+    timezone = pytz.timezone('Europe/Madrid')
+    now = datetime.now(timezone)
+    fecha_pregunta = now.strftime("%Y-%m-%d")
+    hora_pregunta = now.strftime("%H:%M:%S")
+    mail_conductor = current_user.MailConductor
+    
+    # Insertar la pregunta en la base de datos
+    db.insert_db_question(texto_pregunta, fecha_pregunta, hora_pregunta, id_distribuidora, mail_conductor)
+    
+    return redirect(url_for('distributor.distributor_info', id=id_distribuidora))
+
+#Ruta para enviar una respuesta a una pregunta
 @distributor_bp.route('/answer', methods=['POST'])
 @login_required
 def answer():
@@ -128,8 +172,10 @@ def answer():
     distributor_id = request.form['id_distribuidora']
     
     # Obtener la fecha y la hora actuales
-    fecha_respuesta = datetime.now().strftime("%Y-%m-%d")
-    hora_respuesta = datetime.now().strftime("%H:%M:%S")
+    timezone = pytz.timezone('Europe/Madrid')
+    now = datetime.now(timezone)
+    fecha_respuesta = now.strftime("%Y-%m-%d")
+    hora_respuesta = now.strftime("%H:%M:%S")
     
     # Determinar el tipo de usuario
     user_type = helpers.user_type()
@@ -144,14 +190,6 @@ def answer():
         mail_propietario = current_user.MailPropietario
     
     # Insertar la respuesta en la base de datos
-    db.insert_db_answer(
-        TextoRespuesta=texto_respuesta,
-        Fecha=fecha_respuesta,
-        Hora=hora_respuesta,
-        Verificada=verificada,
-        IdPregunta=id_pregunta,
-        MailConductor=mail_conductor,
-        MailPropietario=mail_propietario
-    )
+    db.insert_db_answer(texto_respuesta, fecha_respuesta, hora_respuesta, verificada, id_pregunta, mail_conductor, mail_propietario)
     
     return redirect(url_for('distributor.distributor_info', id=distributor_id))

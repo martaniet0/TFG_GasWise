@@ -10,7 +10,7 @@ from geoalchemy2 import functions as geofuncs
 from flask_login import current_user
 
 
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor
 
 import app.views.search as search
 import app.views.helpers as helpers
@@ -95,19 +95,39 @@ connector =  {
     'CHAdeMO' : 'chademo',
     'Type 2 (Tethered Connector)' : 'tipo2thetered',
     'Type 2 (Socket Only)' : 'tipo2socket',
-    'CEE 7/4 - Schuko - Type F' : '7/4p',
+    'CEE 7/4 - Schuko - Type F' : '74p',
     'IEC 60309 5-pin' : '60309',
-    'Tesla (Model S/X)' : 'teslaS/X',
+    'Tesla (Model S/X)' : 'teslaSX',
     'CEE 5 Pin' : '5p',
     'CEE 3 Pin' : '3p',
     'Type 1 (J1772)' : 'J1772',
     'CCS (Type 1)' : 'ccs1',
-    'Type I (AS 3112)' : 'AS/NZS3112',
+    'Type I (AS 3112)' : 'ASNZS3112',
     'Europlug 2-Pin (CEE 7/16)' : 'Europlug',
     'NACS / Tesla Supercharger' : 'NACS',
     'CEE+ 7 Pin' : '7p',
     'Blue Commando (2P+E)' : 'Commando'
 }
+
+connector_processed =  {
+    'CCS (Type 2)': 'CCS (Tipo 2)',
+    'CHAdeMO': 'CHAdeMO',
+    'Type 2 (Tethered Connector)': 'Tipo 2 (Thetered Connector)',
+    'Type 2 (Socket Only)': 'Tipo 2 (Socket)',
+    'CEE 7/4 - Schuko - Type F': 'CEE 7/4',
+    'IEC 60309 5-pin': 'IEC 60309 5-pines',
+    'Tesla (Model S/X)': 'Tesla (Modelo S/X)',
+    'CEE 5 Pin': 'CEE 5 pines',
+    'CEE 3 Pin': 'CEE 3 pines',
+    'Type 1 (J1772)': 'Tipo 1 (J1772)',
+    'CCS (Type 1)': 'CCS (Tipo 1)',
+    'Type I (AS 3112)': 'Tipo 1 (AS/NZS 3112 )',
+    'Europlug 2-Pin (CEE 7/16)': 'Europlug 2 pines',
+    'NACS / Tesla Supercharger': 'NACS (Tesla Supercharger)',
+    'CEE+ 7 Pin': 'CEE+ 7 pines',
+    'Blue Commando (2P+E)': 'Blue Commando (2P+E)'
+}
+
 
 brands = {'repsol', 'bp', 'cepsa', 'galp', 'shell'}
 
@@ -160,7 +180,8 @@ def insert_gas_station_data_BD(id, tipo_venta, horario, margen):
                 IdDistribuidora=id,
                 TipoVenta=tipo_venta,
                 Horario=horario,
-                Margen=margen
+                Margen=margen,
+                ServiciosVerificados=False
             )
             session.add(new_gas_station)
             session.commit()
@@ -516,8 +537,6 @@ def get_distributor_data(lat, lon, id):
     lon=lon
 
     if id != None:
-        with open('app/test/log.txt', 'a') as file:
-            file.write("Hola?")
         query_location = """
                         SELECT
                         ST_Y("Location"::geometry) AS latitude,
@@ -530,9 +549,6 @@ def get_distributor_data(lat, lon, id):
         results_location = cur.fetchone()
         lat = results_location[0]
         lon = results_location[1]
-
-    with open('app/test/log.txt', 'a') as file:
-        file.write(f"Id: {id}, Latitud: {lat}, Longitud: {lon}\n")
 
     query = f"""
     SELECT 
@@ -552,7 +568,8 @@ def get_distributor_data(lat, lon, id):
             g."TipoVenta",
             g."Horario",
             g."Margen",
-            g."IdDistribuidora"
+            g."IdDistribuidora",
+            g."ServiciosVerificados"
             FROM "Gasolinera" g
             WHERE g."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
             """
@@ -627,7 +644,54 @@ def get_gas_station_prices(lat, lon):
                     .all())
         
         return [{'combustible': result.combustible, 'precio': result.precio} for result in results]
-    
+
+#Obtener los conectores y precios de una estación de recarga
+def get_charge_points(lat, lon):
+    with session_scope() as session:
+        recarga_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        recarga_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            recarga_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        results = (session.query(
+                        TipoPunto.Nombre.label('punto'),
+                        SuministraEstacionRecarga.CargaRapida.label('carga_rapida'),
+                        SuministraEstacionRecarga.Cantidad.label('cantidad'),
+                        SuministraEstacionRecarga.Voltaje.label('voltaje'),
+                        SuministraEstacionRecarga.Amperios.label('amperios'),
+                        SuministraEstacionRecarga.kW.label('kW')
+                    )
+                    .join(SuministraEstacionRecarga, SuministraEstacionRecarga.IdPunto == TipoPunto.IdPunto)
+                    .join(subquery, subquery.c.IdDistribuidora == SuministraEstacionRecarga.IdDistribuidora)
+                    .all())
+        
+        puntos_list = []
+
+        for result in results:
+            cantidad = result.cantidad if result.cantidad else "-"
+            voltaje = result.voltaje if result.voltaje else "-"
+            amperios = result.amperios if result.amperios else "-"
+            kW = result.kW if result.kW else "-"
+            punto_clave = connector_processed.get(result.punto, "-")
+            puntos_list.append({
+                'punto': punto_clave, 
+                'carga_rapida': result.carga_rapida, 
+                'cantidad': cantidad, 
+                'voltaje': voltaje, 
+                'amperios': amperios, 
+                'kW': kW})
+
+        return puntos_list
+        
+
+
 #Obtener los servicios de una gasolinera
 def get_gas_station_services(lat, lon):
     with session_scope() as session:
@@ -799,7 +863,7 @@ def insert_rating(id_distribuidora, puntuacion, texto, mail_conductor):
         except IntegrityError:
             session.rollback()
 
-def insert_db_services(distributor_id, selected_services):
+def insert_db_services_driver(distributor_id, selected_services):
     with session_scope() as session:
         try:
             # Insertar los servicios indicados en IndicaServicioConductor
@@ -889,8 +953,66 @@ def insert_db_services(distributor_id, selected_services):
             flash('Ya has indicado anteriormente los servicios para esta gasolinera. Solo se puede hacer una vez', 'danger')
             session.rollback()
 
+def insert_db_services_owner(distributor_id, selected_services):
+    with session_scope() as session:
+        try:
+            # Insertar los servicios indicados ServiciosGasolinera
+            for service_key, service_value in selected_services.items():
+                existe = True if service_value == 'yes' else False
+                service_id = next(key for key, value in services.items() if value == service_key)
+
+                existing_service = session.query(ServiciosGasolinera).filter(
+                    and_(
+                        ServiciosGasolinera.IdServicio == service_id,
+                        ServiciosGasolinera.IdDistribuidora == distributor_id
+                    )
+                ).first()
+
+                if existing_service:
+                    # Si existe, actualizar la entrada
+                    existing_service.Verificado = True
+                    existing_service.Existe = existe
+                    existing_service.Porcentaje = None
+                else:
+                    new_service = ServiciosGasolinera(
+                        IdServicio=service_id,
+                        IdDistribuidora=distributor_id,
+                        Verificado=True,
+                        Existe=existe,
+                        Porcentaje=None
+                    )
+                    session.add(new_service)
+
+            #Eliminar de IndicaServicioConductor los servicios indicados anteriormente para ese idServicio y idDistribuidora
+            session.query(IndicaServicioConductor).filter_by(IdDistribuidora=distributor_id).delete()
+            session.query(Gasolinera).filter_by(IdDistribuidora=distributor_id).first().ServiciosVerificados = True
+
+            session.commit()
+
+        except IntegrityError:
+            flash('Ya has indicado anteriormente los servicios para esta gasolinera. Solo se puede hacer una vez', 'danger')
+            session.rollback()
+
+
+def insert_db_question(texto_pregunta, fecha_pregunta, hora_pregunta, id_distribuidora, mail_conductor):
+    with session_scope() as session:
+        try:
+            nueva_pregunta = Pregunta(
+                TextoPregunta=texto_pregunta,
+                Fecha=fecha_pregunta,
+                Hora=hora_pregunta,
+                IdDistribuidora=id_distribuidora,
+                MailConductor=mail_conductor
+            )
+
+            session.add(nueva_pregunta)
+            session.commit()
+            flash('Pregunta enviada con éxito', 'success')
+        except IntegrityError:
+            session.rollback()
+
 #Insertar una respuesta en la BD
-def insert_db_answer(id_pregunta, texto_respuesta, mail_conductor, mail_propietario, fecha, hora, verificada):
+def insert_db_answer(texto_respuesta, fecha_respuesta, hora_respuesta, verificada, id_pregunta, mail_conductor, mail_propietario):
     with session_scope() as session:
         try:
             nueva_respuesta = Respuesta(
@@ -898,12 +1020,13 @@ def insert_db_answer(id_pregunta, texto_respuesta, mail_conductor, mail_propieta
                 TextoRespuesta=texto_respuesta,
                 MailConductor=mail_conductor,
                 MailPropietario=mail_propietario,
-                Fecha=fecha,
-                Hora=hora,
+                Fecha=fecha_respuesta,
+                Hora=hora_respuesta,
                 Verificada=verificada
             )
 
             session.add(nueva_respuesta)
             session.commit()
+            flash('Respuesta enviada con éxito', 'success')
         except IntegrityError:
             session.rollback()

@@ -1,11 +1,12 @@
 {% extends "layout.html" %}
 
-<!--- AQUÍ PONGO SI QUIERO UN STYLE ESPECÍFICO PARA ESTA PÁGINA
-{% block styles %}
-    <link rel="stylesheet" href="../static/css/xxx.css">
-{% endblock styles %}
---->
-
 {% block content %}
-    <h1>Página para informar al usuario que su cuenta aún no está validada</h1>
+    <div class="extra-container">
+        <div class="informational-container">
+            <h1 id="title">Acceso bloqueado </h1>
+            <p>Nuestro equipo está revisando si su documento de verificación es válido. Cuando lo comprobemos <strong>le enviaremos un mail</strong>.</p>
+            <p>Gracias por su paciencia.</p>
+            <img src="{{ url_for('static', filename='img/verification.gif') }}" alt="Espere">
+        </div>
+    </div>
 {% endblock content %}

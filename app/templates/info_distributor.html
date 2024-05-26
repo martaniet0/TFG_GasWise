@@ -19,17 +19,23 @@
                 <h3 class="my-4">Información</h3>
                 <li class="list-group-item">
                     <h5><b>{{ distributor.Nombre }}</b></h5>
-                    {% if distributor.Email %}
-                    <p><b>Email:</b> {{ distributor.Email }}</p>
+                    {% if distributor.Tipo == 'G' %}
+                        {% if distributor.Email %}
+                        <p><b>Email:</b> {{ distributor.Email }}</p>
+                        {% endif %}
                     {% endif %}
                     {% if distributor.Tipo_venta %}
                     <p><b>Tipo de venta:</b> {{ distributor.Tipo_venta }}</p>
                     {% endif %}
-                    {% if distributor.Horario %}
-                    <p><b>Horario:</b> {{ distributor.Horario }}</p>
+                    {% if distributor.Tipo == 'G' %}
+                        {% if distributor.Horario %}
+                        <p><b>Horario:</b> {{ distributor.Horario }}</p>
+                        {% endif %}
                     {% endif %}
-                    {% if distributor.Margen %}
-                    <p><b>Margen:</b> {{ distributor.Margen }}</p>
+                    {% if distributor.Tipo == 'G' %}
+                        {% if distributor.Margen %}
+                        <p><b>Margen:</b> {{ distributor.Margen }}</p>
+                        {% endif %}
                     {% endif %}
                     {% if distributor.Direccion %}
                     <p><b>Dirección:</b> {{ distributor.Direccion }}</p>
@@ -37,36 +43,89 @@
                 </li>
             </div>
 
-            <!--Tabla de Combustibles-->
-            <div class="combustibles">
-                <h3 class="my-4">Combustibles</h3>
-                <div class="table-responsive">
-                    <table class="table-combustibles table">
-                        <thead>
-                            <tr>
-                                <th>Combustible</th>
-                                <th>Precio</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for precio in precios %}
-                            <tr>
-                                <td>{{ precio.combustible }}</td>
-                                <td>{{ precio.precio }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!--Tabla de Precios-->
+                <!--Para gasolineras-->
+                {% if distributor.Tipo == 'G' %}
+                <div class="suministros">
+                    <h3 class="my-4">Combustibles</h3>
+                    <div class="table-responsive">
+                        <table class="table-suministros table">
+                            <thead>
+                                <tr>
+                                    <th>Combustible</th>
+                                    <th>Precio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for precio in precios %}
+                                <tr>
+                                    <td>{{ precio.combustible }}</td>
+                                    <td>{{ precio.precio }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+                {% endif %}
+                <!--Para estaciones de recarga-->
+                {% if distributor.Tipo == 'E' %}
+                {% if puntos_recarga %}
+                <div class="suministros col-md-7">
+                    <h3 class="my-4">Puntos de Recarga</h3>
+                    <label><strong>Precio:</strong> {{ distributor.Precio }}</label>
+                    <div class="table-responsive">
+                        <table class="table-suministros table">
+                            <thead>
+                                <tr>
+                                    <th>Punto</th>
+                                    <th>Carga Rápida</th>
+                                    <th>Cantidad</th>
+                                    <th>Voltaje</th>
+                                    <th>Amperios</th>
+                                    <th>kW</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for punto_recarga in puntos_recarga %}
+                                <tr>
+                                    <td>{{ punto_recarga.punto }}</td>
+                                    {% if punto_recarga.carga_rapida %}
+                                        <td><img src="{{ url_for('static', filename='img/true.png') }}" alt="Sí" id="icon-table-true"></td>
+                                    {% else %}
+                                        <td><img src="{{ url_for('static', filename='img/close.png') }}" alt="No" id="icon-table-false"></td>
+                                    {% endif %}
+                                    <td>{{ punto_recarga.cantidad }}</td>
+                                    <td>{{ punto_recarga.voltaje }}</td>
+                                    <td>{{ punto_recarga.amperios }}</td>
+                                    <td>{{ punto_recarga.kW }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>   
+                {% endif %}             
+                {% endif %}
         </div>
         
         <!--Servicios-->
-        <div class="services-container my-4">
+        {% if distributor.Tipo == 'G' %}
+        <div class="container my-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Servicios</h3>
-                <a href="{{ url_for('distributor.service_form', distributor_id=distributor.Id_distribuidora) }}" class="btn btn-outline-secondary" role="button">Indicar Servicios</a>
+                <div class="d-flex align-items-center">
+                    <h3 class="mb-0">Servicios</h3>
+                    {% if distributor.Servicios_verificados %}
+                        <p class="text-muted mt-1 mb-0 d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='img/tick.png') }}" class="mr-1" alt="Verificado Icon" style="height: 1em; width: 1em; margin-left: 10px;"> Verificados por el propietario
+                        </p>
+                    {% endif %}
+                </div>
+                {% if not distributor.Servicios_verificados %}
+                    <a href="{{ url_for('distributor.service_form', distributor_id=distributor.Id_distribuidora, servicios_verificados=distributor.Servicios_verificados) }}" class="btn btn-outline-secondary" role="button">Indicar Servicios</a>
+                {% endif %}
             </div>
+            
             <div class="row">
                 {% for servicio in servicios %}
                     {% if servicio.existe %}
@@ -76,11 +135,7 @@
                                 <img src="{{ url_for('static', filename='img/icon{}.png'.format(servicio.icono)) }}" alt="Servicio Icon" class="service-icon">
                                 <div class="service-info ms-3">
                                     <h4 class="card-title">{{ servicio.servicio }}</h4>
-                                    {% if servicio.verificado %}
-                                    <p class="text-muted">
-                                        <img src="{{ url_for('static', filename='img/tick.png') }}" alt="Verificado Icon" style="height: 1em; width: 1em;"> Verificado
-                                    </p>
-                                    {% else %}
+                                    {% if not servicio.verificado %}
                                     <p class="text-muted">
                                         <img src="{{ url_for('static', filename='img/chart.png') }}" alt="Chart Icon" style="height: 1em; width: 1em;"> El {{ servicio.porcentaje }}% de los usuarios asegura que dispone este servicio.
                                     </p>
@@ -93,6 +148,7 @@
                 {% endfor %}
             </div>
         </div> 
+        {% endif %}
 
         <!--Preguntas y respuestas-->
         <div class="info-container">
@@ -100,14 +156,19 @@
                 <h3 class="my-4">Preguntas</h3>   
         
                 <!-- Formulario para hacer una pregunta -->
-                <form id="formPregunta">
+                {% if user_type == 'C' %}
+                <form id="formPregunta" action="/distributor/question" method="POST">
                     <div class="form-group">
-                        <textarea class="form-control" id="pregunta" rows="3" placeholder="Escribe tu pregunta aquí"></textarea>
+                        <textarea class="form-control" id="pregunta" name="pregunta" rows="3" placeholder="Escribe tu pregunta aquí"></textarea>
+                        <input type="hidden" name="id_distribuidora" value="{{ distributor.Id_distribuidora }}">
                     </div>
-                    <button type="button" class="btn btn-outline-secondary" id="btnPreguntar">Preguntar</button>
+                    <button type="submit" class="btn btn-outline-secondary" id="btnPreguntar">Preguntar</button>
                 </form>
+                {% endif %}
+                
         
                 <!-- Lista de preguntas y respuestas -->
+                {% if preguntas %}
                 <li class="list-group-item mt-4" id="listaPreguntas">
                     {% for pregunta in preguntas %}
                     <div class="question">
@@ -140,9 +201,11 @@
                                     <p class="card-text">
                                         <strong class="user-name">{{ respuesta.mail_respuesta }}</strong> 
                                         {% if respuesta.verificada %}
-                                            <img src="{{ url_for('static', filename='img/tick.png') }}" alt="Verificado Icon" style="height: 1em; width: 1em;" class="ms-2 align-middle"> 
+                                        <small class="text-muted">
+                                            <img src="{{ url_for('static', filename='img/tick.png') }}" class="mr-0" alt="Verificado Icon" style="height: 0.9em; width: 0.9em;"> Verificado por el propietario
+                                        </small>
                                         {% endif %}
-                                        <small class="text-muted">{{ respuesta.fecha_respuesta }} {{ respuesta.hora_respuesta }}</small>
+                                        <small class="text-muted ml-2">{{ respuesta.fecha_respuesta }} {{ respuesta.hora_respuesta }}</small>
                                     </p>
                                 </div>
                                 <p>{{ respuesta.respuesta }}</p>
@@ -152,6 +215,7 @@
                     </div>
                     {% endfor %}
                 </li>
+                {% endif %}
             </div>
         </div>        
 
@@ -161,7 +225,8 @@
                 <h3 class="my-4">Valoraciones</h3>
                 <!--<div class="container mt-5">
                     <div class="info-container p-3 border rounded">-->
-                        <div class="row col-12">
+                        <div class="row ">
+                            {% if valoracion_media %}
                             <div class="col-lg-3 mb-3 mb-md-0 d-flex flex-column">
                                 <div class="card p-3 shadow-sm h-100">
                                     <div class="d-flex flex-column align-items-center h-100 justify-content-center">
@@ -185,6 +250,8 @@
                                     </div>
                                 </div>
                             </div>
+                            {% endif %}
+                            {% if user_type == 'C' %}
                             <div class="col-md-9">
                                 <div class="card p-3 shadow-sm">
                                     <form action="" method="POST" id="ratingForm">
@@ -210,6 +277,7 @@
                                     </form>
                                 </div>
                             </div>
+                            {% endif %}
                             
                         </div>
                         <div class="mt-4 col-12">

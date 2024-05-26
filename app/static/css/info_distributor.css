@@ -4,23 +4,28 @@
     gap: 10px;
 }
 
-.info, .combustibles {
+.info, .suministros {
     flex: 1;
     margin: 10px;
     box-sizing: border-box;
 }
 
-.table-combustibles {
+.table-suministros {
     width: 100%;
     border-collapse: collapse;
 }
 
-.table-combustibles th, .table-combustibles td {
+.table-suministros th, .table-suministros td {
     border: 1px solid #dddddd;
     padding: 8px;
 }
 
-.table-combustibles th {
+.table-suministros td{
+    text-align: center;
+
+}
+
+.table-suministros th {
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
@@ -28,16 +33,26 @@
     color: #ffffff;
 }
 
-.table-combustibles tr:nth-child(even) {
+.table-suministros tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-.table-combustibles tr:hover {
+.table-suministros tr:hover {
     background-color: #ddd;
 }
 
 .table-responsive {
     overflow-x: auto;
+}
+
+#icon-table-true{
+    height: 20px;
+    width: 20px;
+}
+
+#icon-table-false{
+    height: 12px;
+    width: 12px;
 }
 
 .btn.btn-outline-secondary {

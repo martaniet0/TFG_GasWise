@@ -194,7 +194,7 @@ def get_nearest_distributors():
 #param: latitud y longitud
 @search_bp.route('/get_distributor_info/<lat>/<lon>')
 def get_distributor_info(lat, lon):
-    data = db.get_distributor_data(lat, lon)
+    data, latitud, longitud = db.get_distributor_data(lat, lon, None)
 
     if data is None:
         return jsonify({'error': 'No se encontraron datos para la ubicación proporcionada'}), 400

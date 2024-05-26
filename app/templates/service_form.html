@@ -22,9 +22,11 @@
                         <label class="btn btn-outline-secondary btn-custome">
                             <input type="radio" name="{{ key }}" value="no" autocomplete="off"> No
                         </label>
+                        {% if user_type == 'C' %}
                         <label class="btn btn-outline-secondary btn-custome">
                             <input type="radio" name="{{ key }}" value="unknown" autocomplete="off"> No sabe
                         </label>
+                        {% endif %}
                     </div>
                 </div>
             </div>

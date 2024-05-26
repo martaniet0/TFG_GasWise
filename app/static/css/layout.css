@@ -1,8 +1,38 @@
+@font-face {
+    font-family: 'Poppins';
+    src: url('../font/Poppins-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('../font/Poppins-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('../font/Poppins-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('../font/Poppins-Thin.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('../font/Poppins-Light.ttf') format('truetype');
+}
+
 body, html {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow-y: hidden;
+    font-family: 'Poppins' !important;
 }
 
 body {
@@ -15,66 +45,19 @@ body {
     );
 }
 
-/*header {
-    height: 60px; 
-    padding: 10px;
-    display: flex;
-    justify-content: flex-end; 
-    align-items: center;
-    background-color:  #ffffff  ;
-}
 
 header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-
-#font-logo-img{
-    width: 420px; 
-    height: 80px;
-}
-
-.icon {
-    width: 50px; 
-    height: auto;
-
-}
-
-img{
-    width: 50px; 
-    height: auto;
-}
-
-.left {
-    position: absolute;
-    margin-left: 10px;
-}
-
-.right {
-    position: absolute;
-    right: 40px;
-}
-
-.right2 {
-    position: absolute;
-    right: 140px;
-}*/
-
-header {
-   /* height: 60px; 
-    padding: 5px;
-    position: relative; 
-    background-color: #ffffff;*/
     height: 60px; 
     padding: 5px;
     position: relative;
     background-color: rgba(255, 255, 255);
-    /*background-color: rgba(0, 0, 0, 0.4);*/
     display: flex;
-    justify-content: center; /* Centra horizontalmente los elementos hijos */
-    align-items: center; /* Centra verticalmente los elementos hijos */
+    justify-content: center; 
+    align-items: center; 
+}
+
+#opcion2{
+    background-color: #087b71
 }
 
 .icon {
@@ -89,6 +72,16 @@ header {
     font-weight: bolder;
 }
 
+#header-btn2{
+    background-color: #01726d;
+    color: white;
+    font-weight: bolder;
+    border: 0.5px solid white;
+}
+
+#header-btn2:hover{
+    background-color: #38b48c;
+}
 
 #font-logo{
     position: absolute;
@@ -180,4 +173,62 @@ main {
         display: none;
     }
 
+}
+
+/*Página de espera del propietario*/
+.extra-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+.informational-container {
+    text-align: center;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    max-width: 600px;
+    width: 100%;
+}
+
+.informational-container #title {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #343a40; 
+}
+
+.informational-container p {
+    font-size: 1.2em;
+    color: #6c757d; 
+    margin-bottom: 20px;
+}
+
+.informational-container img {
+    display: block;
+    margin: 0 auto;
+    height: 40%; 
+    width: 40%;
+    max-height: 300px; 
+    max-width: 100%; 
+}
+
+@media (max-width: 767px) {
+    .informational-container img {
+        height: 100%;
+        width: 100%;
+    }
+
+}
+
+/*Tipografía para los popups del mapa*/
+.leaflet-popup-content {
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+.leaflet-popup-content b {
+    font-weight: bolder; 
 }

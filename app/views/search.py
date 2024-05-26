@@ -249,20 +249,19 @@ def get_distributors_list():
         latitud = helpers.to_float(distributor[0])
         longitud = helpers.to_float(distributor[1])
         
-        distributor_data = db.get_distributor_data(latitud, longitud)
+        distributor_data, lat, lon = db.get_distributor_data(latitud, longitud, None)
         
-        # Append distributor info if available, else append None
         if distributor_data:
             distributors_info.append({
-                'lat': latitud,
-                'lon': longitud,
-                'info': distributor_data
+                'info': distributor_data,
+                'lat': lat,
+                'lon': lon
             })
         else:
             distributors_info.append({
-                'lat': latitud,
-                'lon': longitud,
-                'info': None
+                'info': None,
+                'lat': lat,
+                'lon': lon
             })
 
     final_distributors_info = []

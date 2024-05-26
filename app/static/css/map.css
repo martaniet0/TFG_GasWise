@@ -32,11 +32,11 @@ main{
         z-index: 1000;
     }
 
-    main{
+    /*main{
         margin: 0;
         padding: 0;
         height: 100%;
-    }
+    }*/
 
     .form-group {
         margin: 5px; 
