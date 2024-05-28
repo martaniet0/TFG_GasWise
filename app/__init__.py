@@ -22,14 +22,12 @@ def create_app():
     login_manager.login_view = 'users.login'
     login_manager.login_message_category = 'info'
     
-    from app.routes_borrar import routes_bp
     from .views.search import search_bp
     from .views.users import users_bp
     from .views.procedures_EV_station import EV_bp
     from .views.procedures_gas_station import gas_bp
     from .views.distributor_info import distributor_bp
 
-    app.register_blueprint(routes_bp)
     app.register_blueprint(search_bp, url_prefix='/search')
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(EV_bp, url_prefix='/EV')

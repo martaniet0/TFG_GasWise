@@ -172,6 +172,7 @@ def wait():
 @login_required
 @helpers.owner_required
 def home_owner():
+    #Tengo que pasarle los distribuidores que tiene este owner
     return render_template('owner_home.html', title='Home')
 
 

@@ -123,6 +123,7 @@ def distributor_info(id=None):
 
 #Ruta para mostrar el formulario para indicar los servicios de una distribuidora
 @distributor_bp.route('/service/form/<int:distributor_id>')
+@login_required
 def service_form(distributor_id):
     services = db.services_names
     user_type = helpers.user_type()
@@ -147,6 +148,7 @@ def services(distributor_id):
 #Ruta para enviar una pregunta
 @distributor_bp.route('/question', methods=['GET', 'POST'])
 @login_required
+@helpers.driver_required
 def question():
     texto_pregunta = request.form['pregunta']
     id_distribuidora = request.form['id_distribuidora']
