@@ -6,21 +6,26 @@ from geoalchemy2.shape import to_shape
 from shapely.geometry import Point
 from flask_login import UserMixin
 
-#!!!Como hacerlo para propietario y administrador?
 @login_manager.user_loader
 def load_user(user_email):
     user = Conductor.query.get(user_email)
     if user is not None:
         return user
-    return Propietario.query.get(user_email)
+    user = Propietario.query.get(user_email)
+    if user is not None:
+        return user
+    return Administrador.query.get(user_email)
 
-class Administrador(db.Model):
+class Administrador(db.Model, UserMixin):
     __tablename__= 'Administrador'
 
     MailAdmin = Column(String(100), primary_key=True)
     Contrasenia = Column(String(255), nullable=False)
     Nombre = Column(String(100), nullable=False)
     Apellidos = Column(String(100))
+
+    def get_id(self):
+        return self.MailAdmin
 
 
 class Conductor(db.Model, UserMixin):
@@ -105,7 +110,6 @@ class Propietario(db.Model, UserMixin):
     Contrasenia = Column(String(255), nullable=False)
     Nombre = Column(String(100), nullable=False)
     Apellidos = Column(String(100))
-    Documento = Column(LargeBinary, nullable=False)
     Activo = Column(Boolean, nullable=False)
 
     def get_id(self):
@@ -123,8 +127,12 @@ class Propietario(db.Model, UserMixin):
 class PoseeDistribuidora(db.Model):
     __tablename__ = 'PoseeDistribuidora'
 
-    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'), primary_key=True)
-    IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), primary_key=True)
+    IdPosee= Column(Integer, primary_key=True)
+    MailPropietario = Column(String(100), ForeignKey('Propietario.MailPropietario'), nullable=False)
+    Documento = Column(LargeBinary, nullable=False)
+    IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'))
+    Confirmado = Column(Boolean)
+    Revisado = Column(Boolean)
 
 
 class Respuesta(db.Model):

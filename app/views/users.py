@@ -95,7 +95,7 @@ def register():
             else:
                 flash('Documento acreditativo es requerido.', 'error')
                 return render_template('registration.html', form=form)
-            flash(f'¡Genial, {form.nombre.data}! Tu registro ha sido completado con éxito. Ahora debes esperar hasta que el administrador te envie un correo informándote de que tu cuenta está habilitada. Hasta ese momento no podrás logearte.', 'success')
+            flash(f'¡Genial, {form.nombre.data}! Tu registro ha sido completado con éxito. Ahora debes esperar hasta que el administrador te envie un correo informándote de que tu cuenta está habilitada. Hasta ese momento no podrás iniciar sesión.', 'success')
             return render_template('logout.html', title='¡Hasta pronto!')
     else:
         for fieldName, errorMessages in form.errors.items():
@@ -120,6 +120,9 @@ def login():
         if not usuario:
             usuario = Propietario.query.filter_by(MailPropietario=form.mail.data).first()
             tipo = "Propietario"
+        if not usuario:
+            usuario = Administrador.query.filter_by(MailAdmin=form.mail.data).first()
+            tipo = "Administrador"
         if usuario and bcrypt.check_password_hash(usuario.Contrasenia, form.password.data):
             if tipo == "Propietario" and not usuario.Activo:
                     return redirect(url_for('users.wait'))
@@ -128,6 +131,8 @@ def login():
                 return redirect(url_for('search.mapa'))
             elif tipo == "Propietario":
                 return redirect(url_for('users.home_owner'))
+            elif tipo == "Administrador":
+                return redirect(url_for('admin.home_admin'))
         else:
             flash('¡Error! Por favor, comprueba tu correo y contraseña.', 'danger')
     return render_template('login.html', title='Login', form=form)
@@ -173,6 +178,25 @@ def wait():
 @helpers.owner_required
 def home_owner():
     #Tengo que pasarle los distribuidores que tiene este owner
-    return render_template('owner_home.html', title='Home')
+    properties = database.get_gas_stations_owner()
 
+    return render_template('owner_home.html', title='Home', distributors=properties)
 
+#Ruta para que un propietario pueda añadir una propiedad
+@users_bp.route("/owner/add_property", methods=["GET", "POST"])
+def add_property():
+    if request.method == "POST":
+        file = request.files.get('documento')
+        if file:
+            doc = file.read()
+            try:
+                database.insert_db_property(doc)
+                flash('Tu documento se ha enviado correctamente. Por favor, espera a que el administrador te notifique por correo electrónico sobre la validación de tu propiedad. Hasta que recibas esta confirmación, no podrás ver la gasolinera añadida.', 'success')
+                return redirect(url_for('users.home_owner'))
+            except Exception as e:
+                flash(f'An error occurred: {str(e)}')
+                return redirect(request.url)
+        else:
+            flash('No file part')
+            return redirect(request.url)
+    return render_template('add_property.html')

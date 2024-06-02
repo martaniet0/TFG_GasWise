@@ -10,7 +10,7 @@ from geoalchemy2 import functions as geofuncs
 from flask_login import current_user
 
 
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor, PoseeDistribuidora
 
 import app.views.search as search
 import app.views.helpers as helpers
@@ -274,10 +274,18 @@ def insert_owner_data_BD(mail, contrasenia, nombre, apellidos, documento, activo
                 Contrasenia=contrasenia,
                 Nombre=nombre,
                 Apellidos=apellidos,
-                Documento=documento, 
                 Activo = activo
             )
             session.add(new_owner)
+            session.commit()
+            new_owner_document = PoseeDistribuidora(
+                MailPropietario=mail,
+                Documento=documento,
+                IdDistribuidora=None,
+                Confirmado=False,
+                Revisado=False
+            )
+            session.add(new_owner_document)
             session.commit()
         except IntegrityError:
             session.rollback()
@@ -1030,3 +1038,137 @@ def insert_db_answer(texto_respuesta, fecha_respuesta, hora_respuesta, verificad
             flash('Respuesta enviada con éxito', 'success')
         except IntegrityError:
             session.rollback()
+
+#Obtener las gasolineras que posee un conductor
+def get_gas_stations_owner():
+    with session_scope() as session:
+        # Filtrar primero por distribuidoras que pertenecen al usuario actual y están verificadas
+        distribuidoras_validadas = (session.query(PoseeDistribuidora.IdDistribuidora)
+                                    .filter(PoseeDistribuidora.MailPropietario == current_user.MailPropietario,
+                                            PoseeDistribuidora.Confirmado == True)
+                                    .subquery())
+
+        # Unir con la tabla Distribuidora para obtener detalles y ubicaciones, utilizando funciones ST_X y ST_Y
+        # con una conversión de geography a geometry
+        gasolineras = (session.query(
+                        Gasolinera.IdDistribuidora,
+                        Gasolinera.TipoVenta,
+                        Gasolinera.Horario,
+                        Gasolinera.Margen,
+                        func.ST_Y(func.ST_GeomFromWKB(Distribuidora.Location)).label('latitud'),
+                        func.ST_X(func.ST_GeomFromWKB(Distribuidora.Location)).label('longitud'), 
+                        Distribuidora.Nombre,
+                        Distribuidora.MailPropietario
+                    )
+                    .join(Distribuidora, Gasolinera.IdDistribuidora == Distribuidora.IdDistribuidora)
+                    .join(distribuidoras_validadas, Distribuidora.IdDistribuidora == distribuidoras_validadas.c.IdDistribuidora)
+                    .all())
+        
+        gasolinera_list = []
+
+        for gasolinera in gasolineras:
+            tipo_venta = 'Pública' if gasolinera.TipoVenta else 'Restringida a socios o cooperativistas'
+            margen = 'Derecho' if gasolinera.Margen == 'D' else 'Izquierdo' if gasolinera.Margen == 'I' else None
+            gasolinera_list.append({
+                'id_distribuidora': gasolinera.IdDistribuidora,
+                'tipo_venta': tipo_venta,
+                'horario': gasolinera.Horario,
+                'margen': margen,
+                'latitud': gasolinera.latitud,
+                'longitud': gasolinera.longitud, 
+                'mail': gasolinera.MailPropietario,
+                'nombre': gasolinera.Nombre
+
+            })
+        return gasolinera_list
+    
+#Insertar la información que ofrece un propietario cuando quiere añadir una nueva gasolinera
+def insert_db_property(doc):
+    with session_scope() as session:
+        try:
+            new_owner_document = PoseeDistribuidora(
+                MailPropietario=current_user.MailPropietario,
+                Documento=doc,
+                IdDistribuidora=None,
+                Confirmado=False,
+                Revisado=False
+            )
+            session.add(new_owner_document)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            flash('Ha habido un error al enviar el documento', 'danger')
+
+#Modificar información de la posesión de las gasolineras que han sido confirmadas por un administrador
+def insert_bd_confirmed_property(distribuidora_id, mail_propietario, id_posee):
+    with session_scope() as session:
+        try:
+            # Actualizar la tabla Distribuidora
+            distribuidora = session.query(Distribuidora).filter(Distribuidora.IdDistribuidora == distribuidora_id).one()
+            distribuidora.MailPropietario = mail_propietario
+
+            # Actualizar la tabla Propietario
+            propietario = session.query(Propietario).filter(Propietario.MailPropietario == mail_propietario).one()
+            propietario.Activo = True
+
+            # Actualizar la tabla PoseeDistribuidora
+            posee_distribuidora = session.query(PoseeDistribuidora).filter(PoseeDistribuidora.IdPosee == id_posee).one()
+            posee_distribuidora.Confirmado = True
+            posee_distribuidora.Revisado = True
+            posee_distribuidora.IdDistribuidora = distribuidora_id
+
+            # Confirmar los cambios
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+
+#Modificar información de la posesión de las gasolineras que han sido rechazadas por un administrador
+def insert_bd_rejected_property(id_posee):
+    with session_scope() as session:
+        try:
+            # Actualizar la tabla PoseeDistribuidora
+            posee_distribuidora = session.query(PoseeDistribuidora).filter(PoseeDistribuidora.IdPosee == id_posee).one()
+            posee_distribuidora.Confirmado = False
+            posee_distribuidora.Revisado = True
+
+            # Confirmar los cambios
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+
+#Función para obtener las gasolineras pendientes de verificación
+def get_distributors_pending_verification():
+    with session_scope() as session:
+        try:
+            pending_distributors = session.query(PoseeDistribuidora).filter(PoseeDistribuidora.Revisado == False).all()
+            result = []
+            for distributor in pending_distributors:
+                result.append({
+                    'mailPropietario': distributor.MailPropietario,
+                    'documento': distributor.Documento,
+                    'IdPosee': distributor.IdPosee
+                })
+            return result
+        except Exception as e:
+            raise e
+        finally:
+            session.close()
+
+def get_distributor_document(id_posee):
+    with session_scope() as session:
+        try:
+            distributor = session.query(PoseeDistribuidora).filter(PoseeDistribuidora.IdPosee == id_posee).one()
+            document_data = distributor.Documento
+            return document_data
+        except Exception as e:
+            return str(e), 500
+        finally:
+            session.close()

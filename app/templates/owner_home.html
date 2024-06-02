@@ -4,36 +4,58 @@
     Home
 {% endblock title %}
 
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/owner_home.css') }}">
+{% endblock styles %}
+
 {% block content %}
     <div class="container">
         <h1 class="my-4">Listado</h1>
         <ul class="list-group .list-group-flush .active">
             {% for distributor in distributors %}
             <li class="list-group-item">
-                <h5><b>{{ distributor.Nombre }}</b></h5>
-                {% if distributor.Email %}
-                <p><b>Email:</b> {{ distributor.Email }}</p>
+                <h5><b>{{ distributor.nombre}}</b></h5>
+                <p><b>Email:</b> {{ distributor.mail }}</p>
+                {% if distributor.tipo_venta %}
+                <p><b>Tipo de venta:</b> {{ distributor.tipo_venta }}</p>
                 {% endif %}
-                {% if distributor.Tipo_venta %}
-                <p><b>Tipo de venta:</b> {{ distributor.Tipo_venta }}</p>
+                {% if distributor.horario %}
+                <p><b>Horario:</b> {{ distributor.horario }}</p>
                 {% endif %}
-                {% if distributor.Horario %}
-                <p><b>Horario:</b> {{ distributor.Horario }}</p>
-                {% endif %}
-                {% if distributor.Margen %}
-                <p><b>Margen:</b> {{ distributor.Margen }}</p>
-                {% endif %}
-                {% if distributor.Precio %}
-                <p><b>Precio:</b> {{ distributor.Precio }}</p>
+                {% if distributor.margen %}
+                <p><b>Margen:</b> {{ distributor.margen }}</p>
                 {% endif %}
 
-                <button class="btn btn-outline-secondary" onclick="moreInfo('{{ distributor.lat }}', '{{ distributor.lon }}')">Más información</button>
-            
+                <button class="btn btn-custome btn-outline-secondary" onclick="moreInfo('{{ distributor.latitud }}', '{{ distributor.longitud }}')">Más información</button>
             </li>
             {% endfor %}
         </ul>
-    </div>    
+        <button class="btn btn-custome btn-outline-secondary my-4" onclick="showForm()">+Añadir gasolinera</button>
+    </div>
+
+    <div id="form-overlay" class="form-overlay" style="display: none;">
+        <div class="form-container">
+            <form id="add-distributor-form" method="POST" action="/users/owner/add_property" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="documento">Documento</label>
+                    <input type="file" class="form-control" id="documento" name="documento" required>
+                </div>
+                <button type="submit" class="btn btn-custome btn-outline-secondary">Añadir</button>
+                <button type="button" class="btn btn-custome btn-outline-secondary" onclick="hideForm()">Cancelar</button>
+            </form>
+        </div>
+    </div> 
 {% endblock content %}
+
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/map_search.js') }}"></script>
+    <script>
+        function showForm() {
+            document.getElementById('form-overlay').style.display = 'flex';
+        }
+
+        function hideForm() {
+            document.getElementById('form-overlay').style.display = 'none';
+        }
+    </script>
 {% endblock scripts %}

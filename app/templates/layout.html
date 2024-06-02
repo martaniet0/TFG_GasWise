@@ -20,18 +20,6 @@
 
 </head>
 <body>
-    <!--<header id="opcion1">
-        <a id="font-logo" href="{{ url_for('search.mapa') }}"><img id="font-logo-img" src="{{ url_for('static', filename='img/font.png') }}" alt="Logo GasWise"></a>
-        {% if current_user.is_authenticated %}
-            <a class="icon left" href="{{ url_for('search.mapa') }}"><img id="home-img" src="{{ url_for('static', filename='img/home.png') }}" alt="Inicio"></a>
-            <a class="icon right2" href="{{ url_for('users.account') }}"><img src="{{ url_for('static', filename='img/user.png') }}" alt="Perfil" ></a> 
-            <a class="icon right" href="{{ url_for('users.logout') }}" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?');"><img src="{{ url_for('static', filename='img/exit.png') }}" alt="Salir"></a>
-        {% else %}
-            <a class="icon left" href="{{ url_for('users.login') }}"><img id="home-img" src="{{ url_for('static', filename='img/home.png') }}" alt="Login"></a>
-            <a class="icon right2 btn btn-outline-secondary" id="header-btn" href="{{ url_for('users.login') }}">Login</a>
-            <a class="icon right btn btn-outline-secondary" id="header-btn" href="{{ url_for('users.register') }}">Register</a>
-        {% endif %}
-    </header> -->
     <header id="opcion2">
         <a id="font-logo" href="{{ url_for('search.mapa') }}"><img id="font-logo-img" src="{{ url_for('static', filename='img/font4.png') }}" alt="Logo GasWise"></a>
         {% if current_user.is_authenticated %}

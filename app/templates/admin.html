@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Admin
+{% endblock title %}
+
+{% block content %}
+    <div class="container">
+        <h1 class="my-4">Gasolineras pendientes de verificación</h1>
+        <ul class="list-group .list-group-flush .active">
+            {% for distributor in distributors %}
+            <li class="list-group-item">
+                <p><b>Email:</b> {{ distributor.mailPropietario }}</p>
+                <p><b>Documento acreditativo:</b> 
+                    <a href="{{ url_for('admin.get_document', id_posee=distributor.IdPosee) }}" target="_blank">Descargar PDF</a>
+                </p>
+                <input type="hidden" id="distributorId{{ distributor.IdPosee }}" value="{{ distributor.IdPosee }}">
+                <input type="hidden" id="distributorMail{{ distributor.IdPosee }}" value="{{ distributor.mailPropietario }}">
+                <button class="btn btn-success" onclick="confirmProperty('{{ distributor.IdPosee }}')">Confirmar</button>
+                <button class="btn btn-danger" onclick="location.href='/admin/reject_property?id={{ distributor.IdPosee }}'">Rechazar</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>    
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    function confirmProperty(id) {
+        let distribuidoraId = prompt('Por favor, introduce el ID de la distribuidora:');
+        if (distribuidoraId) {
+            let distributorId = document.getElementById(`distributorId${id}`).value;
+            let distributorMail = document.getElementById(`distributorMail${id}`).value;
+            location.href = `/admin/confirm_property?id=${id}&distribuidora_id=${distribuidoraId}&mailPropietario=${distributorMail}&IdPosee=${distributorId}`;
+        }
+    }
+</script>
+{% endblock scripts %}
