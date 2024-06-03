@@ -4,17 +4,6 @@
     Admin
 {% endblock title %}
 
-{% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock styles %}
-
-{% block header %}
-<header id="cabecera_admin">
-        <a id="font-logo"><img id="font-logo-img" src="{{ url_for('static', filename='img/font4.png') }}" alt="Logo GasWise"></a>
-        <a class="icon right" href="{{ url_for('users.logout') }}" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?');"><img src="{{ url_for('static', filename='img/exit2.png') }}" alt="Salir"></a>
-    </header> 
-{% endblock header %}
-
 {% block content %}
     <div class="container">
         <h1 class="my-4">Gasolineras pendientes de verificación</h1>

@@ -26,6 +26,9 @@ class Administrador(db.Model, UserMixin):
 
     def get_id(self):
         return self.MailAdmin
+    
+    def get_user_type(self):
+        return 'Administrador'
 
 
 class Conductor(db.Model, UserMixin):
@@ -39,6 +42,9 @@ class Conductor(db.Model, UserMixin):
 
     def get_id(self):
         return self.MailConductor
+    
+    def get_user_type(self):
+        return 'Conductor'
     
 class Valoracion(db.Model):
     __tablename__ = 'Valoracion'
@@ -114,6 +120,9 @@ class Propietario(db.Model, UserMixin):
 
     def get_id(self):
         return self.MailPropietario
+    
+    def get_user_type(self):
+        return 'Propietario'
     
     @property
     def is_active(self):
