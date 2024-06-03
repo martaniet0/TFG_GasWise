@@ -195,3 +195,35 @@ def answer():
     db.insert_db_answer(texto_respuesta, fecha_respuesta, hora_respuesta, verificada, id_pregunta, mail_conductor, mail_propietario)
     
     return redirect(url_for('distributor.distributor_info', id=distributor_id))
+
+#Marcar una distribuidora como favorita
+@distributor_bp.route('/add_fav/<int:distributor_id>', methods=['GET', 'POST'])
+@login_required
+def add_fav(distributor_id):
+    with open('app/test/log.txt', 'w') as f:
+        f.write(f'\n aquí llego, hola hola\n')
+    mail = current_user.MailConductor
+    db.insert_fav_distributor(distributor_id, mail)
+    return redirect(url_for('distributor.distributor_info', id=distributor_id))
+
+#Quitar una distribuidora de favoritos
+@distributor_bp.route('/delete_fav/<int:distributor_id>', methods=['POST'])
+@login_required
+def delete_fav(distributor_id):
+    mail = current_user.MailConductor
+    db.delete_fav_distributor(distributor_id, mail)
+    return redirect(url_for('distributor.distributor_info', id=distributor_id))
+
+#Ruta para saber si una distribuidora es favorita
+@distributor_bp.route('/is_fav/<int:distributor_id>', methods=['GET', 'POST'])
+@login_required
+def is_fav(distributor_id):
+    mail = current_user.MailConductor
+    fav = db.get_is_fav_distributor(distributor_id, mail)
+    if fav:
+        fav = "1"
+    else:
+        fav = "0"
+    with open('app/test/log.txt', 'w') as f:
+        f.write(f'\n fav: {fav}\n')
+    return fav

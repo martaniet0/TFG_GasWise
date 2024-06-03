@@ -56,7 +56,7 @@ header {
     align-items: center; 
 }
 
-#opcion2{
+#cabecera{
     background-color: #087b71
 }
 
@@ -113,6 +113,10 @@ img {
     left: 10px;
 }
 
+.left2 {
+    position: absolute;
+    left: 100px;
+}
 
 main {
     background-color: #fff;

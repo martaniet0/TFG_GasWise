@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Listado 
+{% endblock title %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fav_list.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" />
+{% endblock styles %}
+
+{% block content %}
+    <div class="container">
+        <h1 class="my-4">Listado</h1>
+        <ul class="list-group .list-group-flush .active">
+            {% for distributor in distributors %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center my-4">
+                    <h5><b>{{ distributor.nombre }}</b></h5>
+                    <i id="heart-icon-{{ distributor.idDistribuidora }}" class="heart-icon fa-regular fa-heart" data-id="{{ distributor.idDistribuidora }}"></i>
+                </div>
+                {% if distributor.mailPropietario %}
+                <p><b>Email:</b> {{ distributor.mailPropietario}}</p>
+                {% endif %}
+                {% if distributor.TipoVenta %}
+                <p><b>Tipo de venta:</b> {{ distributor.TipoVenta }}</p>
+                {% endif %}
+                {% if distributor.Horario %}
+                <p><b>Horario:</b> {{ distributor.Horario }}</p>
+                {% endif %}
+                {% if distributor.Margen %}
+                <p><b>Margen:</b> {{ distributor.Margen }}</p>
+                {% endif %}
+                {% if distributor.Precio %}
+                <p><b>Precio:</b> {{ distributor.Precio }}</p>
+                {% endif %}
+
+                <button class="btn btn-outline-secondary" onclick="moreInfo('{{ distributor.latitud }}', '{{ distributor.longitud }}')">Más información</button>
+            
+            </li>
+            {% endfor %}
+        </ul>
+    </div>    
+{% endblock content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/map_search.js') }}"></script>
+    <!-- Manejar clic en el icono de "me gusta" -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const heartIcons = document.querySelectorAll('[id^="heart-icon-"]');
+            
+            heartIcons.forEach(heartIcon => {
+                const distributorId = heartIcon.getAttribute('data-id');
+                
+                // Verificar si el distribuidor es favorito
+                fetch(`/distributor/is_fav/${distributorId}`)
+                    .then(response => response.json())
+                    .then(isFav => {
+                        if (isFav === 1) {
+                            heartIcon.classList.add('fa-solid');
+                            heartIcon.classList.add('liked');
+                            heartIcon.classList.remove('fa-regular');
+                        }
+                    });
+
+                heartIcon.addEventListener('click', function() {
+                    heartIcon.classList.toggle('liked');
+                    if (heartIcon.classList.contains('liked')) {
+                        heartIcon.classList.remove('fa-regular');
+                        heartIcon.classList.add('fa-solid');
+                        // Llamar a la ruta /distributors/add_fav
+                        fetch(`/distributor/add_fav/${distributorId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ distributor_id: distributorId })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Added to favorites:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                    } else {
+                        heartIcon.classList.remove('fa-solid');
+                        heartIcon.classList.add('fa-regular');
+                        // Llamar a la ruta /distributors/delete_fav
+                        fetch(`/distributor/delete_fav/${distributorId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ distributor_id: distributorId })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Removed from favorites:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                    }
+                });
+            });
+        });
+    </script>   
+{% endblock scripts %}
+

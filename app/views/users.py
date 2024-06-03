@@ -8,6 +8,7 @@ from app import bcrypt
 from app.models import Conductor, Propietario, Administrador
 import app.views.database as database
 import app.views.helpers as helpers
+from app.views.distributor_info import venta
 
 users_bp = Blueprint('users', __name__)
 
@@ -200,3 +201,21 @@ def add_property():
             flash('No file part')
             return redirect(request.url)
     return render_template('add_property.html')
+
+#Ruta para mostrar las gasolineras favoritas de un conductor
+@users_bp.route("/favorites")
+@login_required
+@helpers.driver_required
+def favorites():
+    mail=current_user.MailConductor
+    with open('app/test/log3.txt', 'a') as f:
+        f.write(f'\n Mail: {mail}\n')
+    distributors = database.get_fav_distributors(mail)
+    for distributor in distributors:
+        if distributor['tipo'] == 'G': 
+            distributor['TipoVenta'] = 'Pública' if distributor['TipoVenta'] else 'Restringida a socios o cooperativistas'
+            distributor['Margen'] = 'Derecho' if distributor['Margen']== 'D' else 'Izquierdo' if distributor['Margen'] == 'I' else None
+        elif distributor['tipo'] == 'E':
+            distributor['TipoVenta'] = venta.get(distributor['TipoVenta'], "-")
+    
+    return render_template('fav_list.html', distributors=distributors)

@@ -3,14 +3,14 @@ import re
 from flask import flash
 
 from sqlalchemy import create_engine, text, select, func, cast, and_
-from sqlalchemy.orm import sessionmaker, aliased
+from sqlalchemy.orm import sessionmaker, aliased, joinedload
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import functions as geofuncs
 from flask_login import current_user
 
 
-from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor, PoseeDistribuidora
+from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor, PoseeDistribuidora, MarcaFavorita
 
 import app.views.search as search
 import app.views.helpers as helpers
@@ -1170,5 +1170,112 @@ def get_distributor_document(id_posee):
             return document_data
         except Exception as e:
             return str(e), 500
+        finally:
+            session.close()
+
+#Función para añadir distribuidora a favoritos
+def insert_fav_distributor(distributor_id, mail):
+    with session_scope() as session:
+        try:
+            new_fav_distributor = MarcaFavorita(
+                IdDistribuidora=distributor_id,
+                MailConductor=mail
+            )
+            with open ('app/test/log.txt', 'w') as file:
+                file.write("\n" + str(new_fav_distributor))
+            session.add(new_fav_distributor)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            flash('Ya has añadido esta distribuidora a favoritos', 'danger')
+
+#Función para eliminar distribuidora de favoritos
+def delete_fav_distributor(distributor_id, mail):
+    with session_scope() as session:
+        try:
+            session.query(MarcaFavorita).filter(
+                and_(
+                    MarcaFavorita.IdDistribuidora == distributor_id,
+                    MarcaFavorita.MailConductor == mail
+                )
+            ).delete()
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            flash('Ha habido un error al eliminar la distribuidora de favoritos', 'danger')
+
+#Función para obtener las distribuidoras favoritas de un conductor
+def get_fav_distributors(mail):
+    with session_scope() as session:
+        try:
+            # Consulta para obtener las distribuidoras favoritas del conductor
+            fav_distributors = session.query(
+                Distribuidora.IdDistribuidora,
+                Distribuidora.Nombre,
+                Distribuidora.MailPropietario,
+                Distribuidora.Tipo,
+                MarcaFavorita.IdDistribuidora,
+                func.ST_Y(func.ST_GeomFromWKB(Distribuidora.Location)).label('latitud'),
+                func.ST_X(func.ST_GeomFromWKB(Distribuidora.Location)).label('longitud')
+            ).join(
+                MarcaFavorita, MarcaFavorita.IdDistribuidora == Distribuidora.IdDistribuidora
+            ).filter(
+                MarcaFavorita.MailConductor == mail
+            ).all()
+
+            result = []
+            for distributor in fav_distributors:
+                distributor_info = {
+                    'mailPropietario': distributor.MailPropietario,
+                    'nombre': distributor.Nombre,
+                    'tipo': distributor.Tipo,
+                    'latitud': distributor.latitud,
+                    'longitud': distributor.longitud, 
+                    'idDistribuidora': distributor.IdDistribuidora
+                }
+
+                # Si el tipo es 'E', buscar en EstacionRecarga
+                if distributor.Tipo == 'E':
+                    estacion = session.query(EstacionRecarga).\
+                        filter(EstacionRecarga.IdDistribuidora == distributor.IdDistribuidora).\
+                        first()
+                    if estacion:
+                        distributor_info.update({
+                            'TipoVenta': estacion.TipoVenta,
+                            'Precio': estacion.Precio
+                        })
+
+                # Si el tipo es 'G', buscar en Gasolinera
+                elif distributor.Tipo == 'G':
+                    gasolinera = session.query(Gasolinera).\
+                        filter(Gasolinera.IdDistribuidora == distributor.IdDistribuidora).\
+                        first()
+                    if gasolinera:
+                        distributor_info.update({
+                            'TipoVenta': gasolinera.TipoVenta,
+                            'Horario': gasolinera.Horario,
+                            'Margen': gasolinera.Margen
+                        })
+
+                result.append(distributor_info)
+
+            return result
+        except Exception as e:
+            raise e
+        finally:
+            session.close()
+
+def get_is_fav_distributor(id_distribuidora, mail):
+    with session_scope() as session:
+        try:
+            fav = session.query(MarcaFavorita).filter(
+                and_(
+                    MarcaFavorita.IdDistribuidora == id_distribuidora,
+                    MarcaFavorita.MailConductor == mail
+                )
+            ).first()
+            return True if fav else False
+        except Exception as e:
+            raise e
         finally:
             session.close()
