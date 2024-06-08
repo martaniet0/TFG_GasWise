@@ -12,3 +12,5 @@ Flask-Bcrypt==1.0.1
 bcrypt==3.2.0
 Flask-Login
 pytz==2023.3
+transformers==4.19.2
+torch==2.3.1

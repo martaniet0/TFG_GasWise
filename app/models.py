@@ -54,6 +54,7 @@ class Valoracion(db.Model):
     Texto = Column(String(500))
     IdDistribuidora = Column(Integer, ForeignKey('Distribuidora.IdDistribuidora'), nullable=False)
     MailConductor = Column(String(100), ForeignKey('Conductor.MailConductor'), nullable=False)
+    ClasificacionTexto = Column(Integer)
 
 class Distribuidora(db.Model):
     __tablename__ = 'Distribuidora'

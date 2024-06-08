@@ -225,96 +225,98 @@
         <!-- Valoraciones -->
         <div class="info-container">
             <div class="info">
-                <h3 class="my-4">Valoraciones</h3>
-                <!--<div class="container mt-5">
-                    <div class="info-container p-3 border rounded">-->
-                        <div class="row ">
-                            {% if valoracion_media %}
-                            <div class="col-lg-3 mb-3 mb-md-0 d-flex flex-column">
-                                <div class="card p-3 shadow-sm h-100">
-                                    <div class="d-flex flex-column align-items-center h-100 justify-content-center">
-                                        {% if valoracion_media %}
-                                            <div class="w-100 text-center">
-                                                <h5 class="mb-4">Valoración media de los clientes</h5>
-                                                <h3 id="valoracion_media" data-valoracion="{{ valoracion_media }}">{{ valoracion_media }}<small class="text-muted">/5</small></h3>
-
-                                            </div>
-                                            <div id="average-rating">
-                                                <!-- Estrellas para la valoración media, se rellenarán dinámicamente -->
-                                                <div class="stars media d-flex justify-content-center w-100">
-                                                    <i class="fa-solid fa-star"></i>
-                                                    <i class="fa-solid fa-star"></i>
-                                                    <i class="fa-solid fa-star"></i>
-                                                    <i class="fa-solid fa-star"></i>
-                                                    <i class="fa-solid fa-star"></i>
-                                                </div>
-                                            </div>
-                                        {% endif %}
+                <div class="d-flex justify-content-between align-items-center my-4">
+                    <h3 class="mb-0">Valoraciones</h3>
+                    <div>
+                        <select class="form-select" id="sortReviews">
+                            <option value="" disabled selected>Ordenar por</option>
+                            <option value="rating_desc">Puntuación: de mayor a menor</option>
+                            <option value="rating_asc">Puntuación: de menor a mayor</option>
+                            <option value="comment_best">Comentario: de mejor a peor</option>
+                            <option value="comment_worst">Comentario: de peor a mejor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    {% if valoracion_media %}
+                    <div class="col-lg-3 mb-3 mb-md-0 d-flex flex-column">
+                        <div class="card p-3 shadow-sm h-100">
+                            <div class="d-flex flex-column align-items-center h-100 justify-content-center">
+                                {% if valoracion_media %}
+                                <div class="w-100 text-center">
+                                    <h5 class="mb-4">Valoración media de los clientes</h5>
+                                    <h3 id="valoracion_media" data-valoracion="{{ valoracion_media }}">{{ valoracion_media }}<small class="text-muted">/5</small></h3>
+                                </div>
+                                <div id="average-rating">
+                                    <!-- Estrellas para la valoración media, se rellenarán dinámicamente -->
+                                    <div class="stars media d-flex justify-content-center w-100">
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
+                                        <i class="fa-solid fa-star"></i>
                                     </div>
                                 </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                            {% if user_type == 'C' %}
-                            <div class="col-md-9">
-                                <div class="card p-3 shadow-sm">
-                                    <form action="" method="POST" id="ratingForm">
-                                        {{ form.hidden_tag() }}
-                                        <div class="mb-3">
-                                            <div class="rating-box mb-2" id="average-rating">
-                                                <strong class="form-label">Tu valoración</strong>
-                                                <div class="stars-input">
-                                                    <input type="hidden" id="rating" name="rating" value="1"><i class="fa-solid fa-star fa-star-input" data-value="1"></i></input>
-                                                    <input type="hidden" id="rating" name="rating" value="2"><i class="fa-solid fa-star fa-star-input" data-value="2"></i></input>
-                                                    <input type="hidden" id="rating" name="rating" value="3"><i class="fa-solid fa-star fa-star-input" data-value="3"></i></input>
-                                                    <input type="hidden" id="rating" name="rating" value="4"><i class="fa-solid fa-star fa-star-input" data-value="4"></i></input>
-                                                    <input type="hidden" id="rating" name="rating" value="5"><i class="fa-solid fa-star fa-star-input" data-value="5"></i></input>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong for="comment" class="form-label">Comentario</strong>
-                                            <textarea id="comment" name="comment" class="form-control" rows="3"></textarea>
-                                        </div>
-                                        <input type="hidden" name="Id_distribuidora" id="Id_distribuidora" value='{{ distributor.Id_distribuidora }}'>    
-                                        <button type="submit" class="btn btn-outline-secondary" id="btnPreguntar">Enviar valoración</button>
-                                    </form>
-                                </div>
-                            </div>
-                            {% endif %}
-                            
                         </div>
-                        <div class="mt-4 col-12">
-                            <!-- Elemento oculto para almacenar las valoraciones -->
-                            <script type="application/json" id="valoraciones-data">
-                                {{ valoraciones | tojson }}
-                            </script>
-                            <!-- Loop through valoraciones to display each review -->
-                            {% for valoracion in valoraciones %}
-                            <div class="card mb-3 p-3 shadow-sm">
-                                <div class="d-flex align-items-center">
-                                    <strong class="user-name name">{{ valoracion.nombre }}</strong>
-                                    <div class="average-rating" data-rating="{{ valoracion.puntuacion }}">
-                                        <!-- Estrellas para la valoración media, se rellenarán dinámicamente -->
-                                        <div class="stars">
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
+                    </div>
+                    {% endif %}
+                    {% if user_type == 'C' %}
+                    <div class="col-md-9">
+                        <div class="card p-3 shadow-sm">
+                            <form action="" method="POST" id="ratingForm">
+                                {{ form.hidden_tag() }}
+                                <div class="mb-3">
+                                    <div class="rating-box mb-2" id="average-rating">
+                                        <strong class="form-label">Tu valoración</strong>
+                                        <div class="stars-input">
+                                            <input type="hidden" id="rating" name="rating" value="1"><i class="fa-solid fa-star fa-star-input" data-value="1"></i></input>
+                                            <input type="hidden" id="rating" name="rating" value="2"><i class="fa-solid fa-star fa-star-input" data-value="2"></i></input>
+                                            <input type="hidden" id="rating" name="rating" value="3"><i class="fa-solid fa-star fa-star-input" data-value="3"></i></input>
+                                            <input type="hidden" id="rating" name="rating" value="4"><i class="fa-solid fa-star fa-star-input" data-value="4"></i></input>
+                                            <input type="hidden" id="rating" name="rating" value="5"><i class="fa-solid fa-star fa-star-input" data-value="5"></i></input>
                                         </div>
                                     </div>
                                 </div>
-                                <p class="mt-2">{{ valoracion.texto }}</p>
-                            </div>
-                            {% endfor %}
+                                <div class="mb-3">
+                                    <strong for="comment" class="form-label">Comentario</strong>
+                                    <textarea id="comment" name="comment" class="form-control" rows="3"></textarea>
+                                </div>
+                                <input type="hidden" name="Id_distribuidora" id="Id_distribuidora" value='{{ distributor.Id_distribuidora }}'>
+                                <button type="submit" class="btn btn-outline-secondary" id="btnPreguntar">Enviar valoración</button>
+                            </form>
                         </div>
-                        
-                        
-                    <!--</div>
-                </div>-->
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mt-4 col-12">
+                    <!-- Elemento oculto para almacenar las valoraciones -->
+                    <script type="application/json" id="valoraciones-data">
+                        {{ valoraciones | tojson }}
+                    </script>
+                    <!-- Loop through valoraciones to display each review -->
+                    {% for valoracion in valoraciones %}
+                    <div class="card mb-3 p-3 shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <strong class="user-name name">{{ valoracion.nombre }}</strong>
+                            <div class="average-rating" data-rating="{{ valoracion.puntuacion }}">
+                                <!-- Estrellas para la valoración media, se rellenarán dinámicamente -->
+                                <div class="stars">
+                                    <i class="fa-regular fa-star"></i>
+                                    <i class="fa-regular fa-star"></i>
+                                    <i class="fa-regular fa-star"></i>
+                                    <i class="fa-regular fa-star"></i>
+                                    <i class="fa-regular fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-2">{{ valoracion.texto }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-        </div>
-    </div> 
+        </div> 
 {% endblock content %}
 
 {% block scripts %}
@@ -473,6 +475,15 @@
             }
         }
     </script>
-    
+    <script>
+        document.getElementById('sortReviews').addEventListener('change', function() {
+            const sortValue = this.value;
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('sort_by', sortValue);
+            // Add a timestamp to force reload
+            urlParams.set('_', new Date().getTime());
+            window.location.search = urlParams.toString();
+        });
+    </script>
     
 {% endblock scripts %}

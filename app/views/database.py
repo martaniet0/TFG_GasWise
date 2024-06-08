@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import functions as geofuncs
 from geoalchemy2 import Geography
 from flask_login import current_user
-
+from transformers import pipeline
 
 from app.models import Ubicacion, Distribuidora, Gasolinera, EstacionRecarga, SuministraGasolinera, SuministraEstacionRecarga, Conductor, Propietario, Administrador, TipoCombustible, TipoPunto, Servicio, ServiciosGasolinera, Pregunta, Respuesta, Valoracion, IndicaServicioConductor, PoseeDistribuidora, MarcaFavorita
 
@@ -815,7 +815,7 @@ def get_questions(lat, lon):
         return pregunta_list, respuesta_list
     
 #Obtener las valoraciones de una distribuidora
-def get_ratings(lat, lon):
+def get_ratings2(lat, lon):
     with session_scope() as session:
         distribuidora_alias = aliased(Distribuidora)
         subquery = (session.query(
@@ -854,16 +854,82 @@ def get_ratings(lat, lon):
         valoracion_media = round(valoracion_media, 2) if valoracion_media else None
 
         return valoracion_list, valoracion_media
-    
+
+def get_ratings(lat, lon, sort_by='rating_desc'):
+    with session_scope() as session:
+        distribuidora_alias = aliased(Distribuidora)
+        subquery = (session.query(
+                        distribuidora_alias.IdDistribuidora,
+                        func.ST_Distance(
+                            distribuidora_alias.Location,
+                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+                        ).label('distance')
+                    )
+                    .order_by('distance')
+                    .limit(1)
+                    .subquery())
+        
+        query = session.query(
+                    Valoracion.Puntuacion.label('puntuacion'),
+                    Valoracion.Texto.label('texto'),
+                    Valoracion.MailConductor.label('mail_valoracion')
+                ).join(subquery, subquery.c.IdDistribuidora == Valoracion.IdDistribuidora)
+        
+        if sort_by == 'rating_desc':
+            query = query.order_by(Valoracion.Puntuacion.desc())
+        elif sort_by == 'rating_asc':
+            query = query.order_by(Valoracion.Puntuacion.asc())
+        elif sort_by == 'comment_best':
+            query = query.order_by(Valoracion.ClasificacionTexto.desc())
+        elif sort_by == 'comment_worst':
+            query = query.order_by(Valoracion.ClasificacionTexto.asc())
+        
+        valoraciones = query.all()
+        
+        valoracion_list = []
+        
+        for valoracion in valoraciones:
+            local_session = Session()
+            conductor_valoracion = local_session.query(Conductor).filter(Conductor.MailConductor == valoracion.mail_valoracion).first()
+            local_session.close()
+            nombre_completo_valoracion = f"{conductor_valoracion.Nombre} {conductor_valoracion.Apellidos}" if conductor_valoracion.Apellidos else f"{conductor_valoracion.Nombre}"
+            valoracion_list.append({
+                'puntuacion': valoracion.puntuacion,
+                'texto': valoracion.texto,
+                'nombre': nombre_completo_valoracion
+            })
+
+        valoracion_media = session.query(func.avg(Valoracion.Puntuacion)).filter(subquery.c.IdDistribuidora == Valoracion.IdDistribuidora).scalar()
+        valoracion_media = round(valoracion_media, 2) if valoracion_media else None
+
+        return valoracion_list, valoracion_media
+
+
 #Insertar valoración de un conductor en la BD 
 def insert_rating(id_distribuidora, puntuacion, texto, mail_conductor):
     with session_scope() as session:
         try: 
+            # Analizar el sentimiento del texto
+            pipe = pipeline('sentiment-analysis', model='pysentimiento/robertuito-sentiment-analysis')
+            
+            resultado = pipe(texto)
+            clasificacion = resultado[0]['label']
+            
+            if clasificacion == 'NEG':
+                clasificacion_valor = -1
+            elif clasificacion == 'NEU':
+                clasificacion_valor = 0
+            elif clasificacion == 'POS':
+                clasificacion_valor = 1
+            else:
+                clasificacion_valor = None  
+
             nueva_valoracion = Valoracion(
                 Puntuacion=puntuacion,
                 Texto=texto,
                 IdDistribuidora=id_distribuidora,
-                MailConductor=mail_conductor
+                MailConductor=mail_conductor, 
+                ClasificacionTexto=clasificacion_valor
             )
 
             session.add(nueva_valoracion)

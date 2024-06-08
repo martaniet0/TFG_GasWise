@@ -95,8 +95,6 @@ def distributor_info(id=None):
     # Obtener latitud y longitud de los parámetros de la URL
     latitud = request.args.get('lat') if request.args.get('lat') else None
     longitud = request.args.get('lon') if request.args.get('lon') else None
-    with open('app/test/log.txt', 'a') as f:
-        f.write(f'\n En la capación de args latitud: {latitud}, longitud: {longitud}, id: {id}\n')
 
     # Información de la distribuidora
     info, tipo, latitud, longitud = distributor_details(latitud, longitud, id)
@@ -113,8 +111,11 @@ def distributor_info(id=None):
     # Preguntas y respuestas
     preguntas, respuestas = db.get_questions(latitud, longitud)
 
+    # Obtener parámetro de ordenación
+    sort_by = request.args.get('sort_by', 'rating_desc')
+
     # Valoraciones
-    valoraciones, valoracion_media = db.get_ratings(latitud, longitud)
+    valoraciones, valoracion_media = db.get_ratings(latitud, longitud, sort_by)
 
     #Tipo de usuario que quiere acceder a la página
     user_type = helpers.user_type() 
