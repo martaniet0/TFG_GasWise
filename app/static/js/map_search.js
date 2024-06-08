@@ -323,8 +323,7 @@ function moreInfo(lat, lon) {
     window.location.href = `/distributor/distributor_info?lat=${lat}&lon=${lon}`;
 }
 
-//!!!NUEVO
-
+//Función para mostrar una lista de localizaciones posibles para que el usuario escoja la que quiera en el origen
 function fetchLocations() {
     showLoading2();
     const origin = document.getElementById('origin').value;
@@ -362,6 +361,7 @@ function fetchLocations() {
         });
 }
 
+//Visualizar o bien a la seleccion del destino o bien al punto con las distribuidoras correspondientes en el mapa según lo que se esté buscando
 function handlePlaceClick(placeName) {
     document.getElementById('origin').value = placeName;
     document.getElementById('location-list').style.display = 'none';
@@ -374,6 +374,7 @@ function handlePlaceClick(placeName) {
     }
 }
 
+//Función para mostrar una lista de localizaciones posibles para que el usuario escoja la que quiera en el destino
 function fetchDestinationLocations(destination) {
     showLoading2();
     const url = new URL('/search/get_locations', window.location.origin);
@@ -404,12 +405,14 @@ function fetchDestinationLocations(destination) {
         });
 }
 
+//Visualizar ruta con distribuidoras en el mapa.
 function handleDestinationClick(placeName) {
     document.getElementById('destination').value = placeName;
     document.getElementById('location-list').style.display = 'none';
     fetchAndDisplayRoute({ preventDefault: () => {} });
 }
 
+//Cambiar el título de la lista de ubicaciones para que sea origen o destino según corresponda
 function updateLocationListTitle(title) {
     document.getElementById('location-list-title').innerText = title;
 }

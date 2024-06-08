@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker, aliased, joinedload
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
 from geoalchemy2 import functions as geofuncs
+from geoalchemy2 import Geography
 from flask_login import current_user
 
 
@@ -529,15 +530,14 @@ def get_nearest_distributors(lat, lon, tipo, **kwargs):
                 coordinates_list.append([float(coords[1]), float(coords[0])])
 
         coordinates_dict = {"coordinates": coordinates_list}
+        search.sort_nearest_distributors_distance(coordinates_dict, lat, lon)
 
         with open('app/json_data/nearest_distributors.json', 'w') as file:
             json.dump(coordinates_dict, file, indent=4)
 
         return tipo
 
-
 #Get distributor info 
-#!!! Con SQL pq con GeoAlchemy no me sale
 def get_distributor_data(lat, lon, id):
     conn = psycopg2.connect("dbname='GasWiseDB' user='marta' host='postgres' password='maniro12'")#!!!
     cur = conn.cursor()
@@ -580,7 +580,7 @@ def get_distributor_data(lat, lon, id):
             g."ServiciosVerificados"
             FROM "Gasolinera" g
             WHERE g."IdDistribuidora" = (SELECT "IdDistribuidora" FROM "Distribuidora" WHERE ST_Equals("Location"::geometry, ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326)::geometry));
-            """
+            """ 
             cur.execute(query_gas_station)
             results_gas_station = cur.fetchone()
             results += results_gas_station
@@ -1275,6 +1275,71 @@ def get_is_fav_distributor(id_distribuidora, mail):
                 )
             ).first()
             return True if fav else False
+        except Exception as e:
+            raise e
+        finally:
+            session.close()
+
+#Obtener id de distribuidora a partir de coordenadas
+def get_distributor_id(lat, lon):
+    with session_scope() as session:
+        # Define el punto a buscar
+        point_wkt = f'POINT({lon} {lat})'
+
+        # Define la consulta SQL
+        sql_query = text("""
+            SELECT "IdDistribuidora"
+            FROM "Distribuidora"
+            WHERE ST_DWithin("Location", ST_GeomFromText(:point_wkt, 4326), 0.01)
+            LIMIT 1
+        """)
+
+        # Ejecuta la consulta SQL
+        result = session.execute(sql_query, {'point_wkt': point_wkt}).fetchone()
+
+        if result:
+            return result[0]
+        else:
+            return None
+
+        
+def get_distributor_rating(id):
+    with session_scope() as session:
+        try:
+            # Consulta para obtener las valoraciones de la distribuidora
+            ratings = session.query(
+                Valoracion.Puntuacion,
+                Valoracion.Texto,
+                Valoracion.MailConductor
+            ).filter(
+                Valoracion.IdDistribuidora == id
+            ).all()
+
+            rating_media = session.query(func.avg(Valoracion.Puntuacion)).filter(Valoracion.IdDistribuidora == id).scalar()
+            rating_media = round(rating_media, 2) if rating_media else None
+
+            return rating_media
+        except Exception as e:
+            raise e
+        finally:
+            session.close()
+
+def get_distributor_price(id, combustible):
+    with session_scope() as session:
+        try:
+            # Consulta para obtener los precios de la gasolinera
+            price = session.query(
+                SuministraGasolinera.Precio
+            ).filter(
+                SuministraGasolinera.IdDistribuidora == id,
+                SuministraGasolinera.IdCombustible == combustible
+            ).first()
+
+            # Si price no es None, extrae el primer valor de la tupla y conviértelo a float
+            if price is not None:
+                return float(price[0])
+            else:
+                return None
         except Exception as e:
             raise e
         finally:

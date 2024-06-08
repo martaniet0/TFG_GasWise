@@ -23,12 +23,18 @@
 
     <header id="cabecera">
         {% if current_user.is_authenticated %}
+            <a id="font-logo">
+                <img id="font-logo-img" src="{{ url_for('static', filename='img/font4.png') }}" alt="Logo GasWise">
+            </a>
+            <a class="icon right" href="{{ url_for('users.logout') }}" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?');">
+                <img src="{{ url_for('static', filename='img/exit2.png') }}" alt="Salir">
+            </a>
             {% if current_user.get_user_type() == 'Conductor' %}
                 <a id="font-logo" href="{{ url_for('search.mapa') }}">
                     <img id="font-logo-img" src="{{ url_for('static', filename='img/font4.png') }}" alt="Logo GasWise">
                 </a>
                 <a class="icon left" href="{{ url_for('search.mapa') }}">
-                    <img id="home-img" src="{{ url_for('static', filename='img/home2.png') }}" alt="Inicio">
+                    <img id="home-img" src="{{ url_for('static', filename='img/map.png') }}" alt="Inicio">
                 </a>
                 <a class="icon left2" href="{{ url_for('users.favorites') }}">
                     <img id="fav-img" src="{{ url_for('static', filename='img/fav2.png') }}" alt="Lista de distribuidoras favoritas">
@@ -47,12 +53,6 @@
                     <img src="{{ url_for('static', filename='img/user2.png') }}" alt="Perfil">
                 </a>
             {% endif %}
-            <a id="font-logo">
-                <img id="font-logo-img" src="{{ url_for('static', filename='img/font4.png') }}" alt="Logo GasWise">
-            </a>
-            <a class="icon right" href="{{ url_for('users.logout') }}" onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?');">
-                <img src="{{ url_for('static', filename='img/exit2.png') }}" alt="Salir">
-            </a>
         {% else %}
             <a class="icon left" href="{{ url_for('users.login') }}">
                 <img id="home-img" src="{{ url_for('static', filename='img/home2.png') }}" alt="Login">

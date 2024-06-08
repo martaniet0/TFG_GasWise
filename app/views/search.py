@@ -1,8 +1,10 @@
 from flask import request, jsonify, Blueprint, render_template
 from flask_login import login_required
+from math import radians, sin, cos, sqrt, atan2
 
 import app.views.database as db
 import app.views.helpers as helpers
+import app.views.procedures_gas_station as gas_station
 import json
 import requests
 
@@ -106,6 +108,86 @@ def check_route_on_water(origin_lat, origin_lon, destination_lat, destination_lo
         print(str(e))
         return None  
     
+def calculate_distance(lat1, lon1, lat2, lon2):
+    # Conversión de grados a radianes
+    lat1, lon1, lat2, lon2 = map(radians, [helpers.to_float(lat1), helpers.to_float(lon1), helpers.to_float(lat2), helpers.to_float(lon2)])
+    
+    # Fórmula Haversine
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    radius = 6371  # Radio de la Tierra en kilómetros
+    distance = radius * c
+    return distance
+
+def sort_nearest_distributors_distance(coordinates_dict, lat, lon):
+    coordinates = coordinates_dict.get("coordinates", [])
+
+    # Ordena las coordenadas por distancia al punto (lat, lon)
+    sorted_coordinates = sorted(coordinates, key=lambda x: calculate_distance(lat, lon, x[0], x[1]))
+
+    # Actualiza el diccionario con las coordenadas ordenadas
+    coordinates_dict["coordinates"] = sorted_coordinates
+
+    return coordinates_dict
+    
+
+def sort_nearest_distributors_rating():
+    with open('app/json_data/nearest_distributors.json', 'r') as file:
+        data = json.load(file)
+
+    sort_list = []
+
+    for coordinates in data["coordinates"]:
+        lat = coordinates[0]
+        lon = coordinates[1]
+        id = db.get_distributor_id(lat, lon)
+        rating = db.get_distributor_rating(id)
+        sort_list.append({
+            'coordinates': coordinates,
+            'id': id,
+            'rating': rating
+        })
+
+    # Ordena la lista en función de la valoración de mayor a menor (los None al final)
+    sorted_list = sorted(sort_list, key=lambda x: (x['rating'] is not None, x['rating']), reverse=True)
+
+    # Extrae solo las coordenadas ordenadas
+    sorted_coordinates = [item['coordinates'] for item in sorted_list]
+
+    # Devuelve las coordenadas en el mismo formato que el archivo JSON original
+    return {"coordinates": sorted_coordinates}
+
+import json
+
+def sort_price_distributors(precio_combustible):
+    with open('app/json_data/nearest_distributors.json', 'r') as file:
+        data = json.load(file)
+
+    sort_list = []
+
+    for coordinates in data["coordinates"]:
+        lat = coordinates[0]
+        lon = coordinates[1]
+        id = db.get_distributor_id(lat, lon)
+        precio = db.get_distributor_price(id, precio_combustible)
+        sort_list.append({
+            'coordinates': coordinates,
+            'id': id,
+            'precio': precio
+        })
+
+    # Ordena la lista en función del precio de menor a mayor, colocando los None al final
+    sorted_list = sorted(sort_list, key=lambda x: (x['precio'] is None, x['precio'] if x['precio'] is not None else float('inf')))
+
+    # Extrae solo las coordenadas ordenadas
+    sorted_coordinates = [item['coordinates'] for item in sorted_list]
+
+    # Devuelve las coordenadas en el mismo formato que el archivo JSON original
+    return {"coordinates": sorted_coordinates}
+
+
 ############################################################################################################
 #RUTAS
 ############################################################################################################
@@ -236,11 +318,27 @@ def get_distributor_info(lat, lon):
 
     return jsonify(response)
 
-#Ruta para obtener la info de un listado de distribuidoras
+#Ruta para obtener la info de un listado de distribuidoras, por defecto ordenado por distancia al punto de origen
 @search_bp.route('/get_distributors_list', methods=['GET'])
-def get_distributors_list():
-    with open('app/json_data/nearest_distributors.json', 'r') as file:
-        data = json.load(file)
+@search_bp.route('/get_distributors_list/<param>', methods=['GET'])
+def get_distributors_list(param=None):
+    valoracion = False
+    precio_combustible = None
+    mostrar_precio = False
+    
+    if param == "valoracion":
+        valoracion = True
+    elif param:
+        precio_combustible = param
+
+    if valoracion:
+        data = sort_nearest_distributors_rating()
+    elif precio_combustible:
+        data = sort_price_distributors(precio_combustible)
+        mostrar_precio = True
+    else:
+        with open('app/json_data/nearest_distributors.json', 'r') as file:
+            data = json.load(file)
 
     distributors_info = []
 
@@ -271,14 +369,17 @@ def get_distributors_list():
         info = distributor['info']
         if info:
             if info[2] == 'E':
+                tipo = 'E'
                 distributor_info = {
                     'Nombre': info[0],
                     'Tipo_venta': info[3],
                     'Precio': info[4], 
                     'lat': distributor['lat'],
-                    'lon': distributor['lon']
+                    'lon': distributor['lon'], 
+                    'val_media': db.get_distributor_rating(info[5]) if db.get_distributor_rating(info[5]) else "-"
                 }
             else:
+                tipo = 'G'
                 tipo_venta = 'Pública' if info[3] else 'Restringida a socios o cooperativistas'
                 margen = 'Derecho' if info[5] == 'D' else 'Izquierdo' if info[5] == 'I' else None
                 distributor_info = {
@@ -288,12 +389,15 @@ def get_distributors_list():
                     'Horario': info[4],
                     'Margen': margen,  
                     'lat': distributor['lat'],
-                    'lon': distributor['lon']
+                    'lon': distributor['lon'], 
+                    'val_media': db.get_distributor_rating(info[6]) if db.get_distributor_rating(info[6]) else "-",
+                    'Precio_combustible': db.get_distributor_price(info[6], precio_combustible) if db.get_distributor_price(info[6], precio_combustible) else "-"
                 }
             
             final_distributors_info.append(distributor_info)
 
-    return render_template('distributors_list.html', distributors=final_distributors_info)
+    return render_template('distributors_list.html', distributors=final_distributors_info, tipo=tipo, mostrar_precio=mostrar_precio)
+
 
 #!!!NUEVO
 #Ruta para obtener posibles localizaciones de un lugar
@@ -302,7 +406,7 @@ def get_locations():
     place_name = request.args.get('origin') or request.args.get('destination')
     
     if not place_name:
-        return jsonify({'error': 'Parámetro "origin" o "destination" es necesario'}), 400
+        return jsonify({'error': 'Parámetro origen o destino es necesario'}), 400
 
     # Obtener locations.json
     get_coordinates(place_name)
