@@ -20,8 +20,15 @@
                 <button class="btn btn-danger" onclick="location.href='/admin/reject_property?id={{ distributor.IdPosee }}'">Rechazar</button>
             </li>
             {% endfor %}
+            {% if distributors|length == 0 %}
+            <li class="list-group-item">No hay gasolineras pendientes de verificación.</li>
+            {% endif %}
         </ul>
-    </div>    
+    </div>   
+    <div class="container">
+        <h1 class="my-4">Actualizar datos</h1>
+        <button class="btn btn-custome btn-secondary " id="update-button">Actualizar Datos Gasolineras</button>
+    </div>
 {% endblock content %}
 
 {% block scripts %}
@@ -35,4 +42,21 @@
         }
     }
 </script>
+
+<script>
+    document.getElementById('update-button').addEventListener('click', function() {
+        fetch('/gas/update_gas_station_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                alert('Actualización iniciada. La página estará inaccesible durante el proceso.');
+            } else {
+                alert('Error al iniciar la actualización.');
+            }
+        });
+    });
+    </script>
 {% endblock scripts %}

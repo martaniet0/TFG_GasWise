@@ -1,4 +1,4 @@
-import json
+import json, csv, os
 from app.models import Conductor, Propietario
 from flask_login import current_user, login_required
 from functools import wraps
@@ -65,6 +65,19 @@ def get_default_distributor():
         elif current_user.TipoVehiculo == "G" or current_user.TipoVehiculo == "D":
             return "G"
     return None
+
+#Write data to a CSV file
+def write_to_file(filename, data):
+    with open(filename, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+def read_csv_data(filename):
+    with open(filename, newline='', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        if os.path.getsize(filename) == 0:
+            return None
+        return [row for row in reader]
 
 ############################################################################################################
 #DECORATORS

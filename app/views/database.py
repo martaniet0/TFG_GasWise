@@ -2,7 +2,7 @@ import re
 
 from flask import flash
 
-from sqlalchemy import create_engine, text, select, func, cast, and_
+from sqlalchemy import create_engine, text, select, func, cast, and_, insert, update
 from sqlalchemy.orm import sessionmaker, aliased, joinedload
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
@@ -312,6 +312,13 @@ def get_distributor_ID(idApi):
     with session_scope() as session:
         distributor = session.query(Distribuidora).filter_by(IdAPI=idApi).first()
         return distributor.IdDistribuidora if distributor else None
+
+def get_location(latitud, longitud):
+    with session_scope() as session:
+        location = session.query(Ubicacion).filter(
+            Ubicacion.Location.ST_Intersects(f'SRID=4326;POINT({helpers.to_float(longitud)} {helpers.to_float(latitud)})')
+        ).first()
+        return True if location else False
 
 # Obtiene las distribuidoras de la BD según los filtros dados
 def set_filters(lat, lon, puntos_str, tipo, **kwargs):
@@ -1408,5 +1415,119 @@ def get_distributor_price(id, combustible):
                 return None
         except Exception as e:
             raise e
+        finally:
+            session.close()
+
+##########################################################################################
+#ACTUALIZACIONES EN LA BD
+##########################################################################################
+#!!!USAMOS INSERT PARA QUE PODAMOS BUSCAR LOS DATOS SIN HABERLOS COMMITEADO
+#Inserta los datos de ubicación en la base de datos (sin realizar commit)
+def insert_multiple_location_data_BD(session, data):
+    locations = []
+    if data is not None:
+        for row in data:
+            longitude, latitude, provincia, municipio, localidad, cp, direccion = row
+            location_point = f"POINT({longitude} {latitude})"
+            locations.append({
+                'Provincia': provincia,
+                'Municipio': municipio,
+                'Localidad': localidad,
+                'CP': cp,
+                'Direccion': direccion,
+                'Location': location_point
+            })
+        session.execute(insert(Ubicacion).values(locations))
+        session.flush()
+
+
+def insert_multiple_distributor_data_BD(session, data):
+    distributors = []
+    if data is not None:
+        for row in data:
+            nombre, latitud, longitud, mail, idAPI, tipo = row
+            location_point = f"POINT({longitud} {latitud})"
+            distributors.append({
+                'Nombre': nombre,
+                'MailPropietario': None,
+                'IdAPI': idAPI,
+                'Location': location_point,
+                'Tipo': tipo
+            })
+        session.execute(insert(Distribuidora).values(distributors))
+        session.flush()
+
+def insert_multiple_gas_station_data_BD(session, data):
+    gas_stations = []
+    if data is not None:
+        for row in data:
+            idAPI, tipo_venta, horario, margen = row
+
+            id_distribuidora = get_distributor_ID(str(idAPI))
+            if id_distribuidora is not None:
+                gas_stations.append({
+                    'IdDistribuidora': id_distribuidora,
+                    'TipoVenta': True if 'TipoVenta' == 'True' else False,
+                    'Horario': horario,
+                    'Margen': margen,
+                    'ServiciosVerificados': False
+                })
+        session.execute(insert(Gasolinera).values(gas_stations))
+        session.flush()
+
+#Inserta los datos de las nuevas gasolineras
+def insert_multiple_supply_data_BD(session, data):
+    supplies = []
+    if data is not None:
+        for row in data:
+            idAPI, id_combustible, precio = row
+            # Buscar EN LOS DATOS SIN COMMITEAR TAMBIÉN
+            id_distribuidora = get_distributor_ID(str(idAPI))
+            if id_distribuidora is not None:
+                supplies.append({
+                    'IdDistribuidora': id_distribuidora,
+                    'IdCombustible': id_combustible,
+                    'Precio': helpers.to_float(precio)
+                })
+        session.execute(insert(SuministraGasolinera).values(supplies))
+        session.flush()
+
+#Modifica el precio de las gasolineras ya existentes
+def update_supply_data_BD(session, data):
+    if data is not None:
+        for idAPI, id_combustible, precio in data:
+            id_distribuidora = get_distributor_ID(str(idAPI))
+            if id_distribuidora is not None:
+                session.execute(
+                    update(SuministraGasolinera)
+                    .where(SuministraGasolinera.idDistribuidora == id_distribuidora)
+                    .where(SuministraGasolinera.idCombustible == id_combustible)
+                    .values(Precio=helpers.to_float(precio))
+                )
+        session.flush()
+
+def update_gas_stations_data_BD():
+    ubicaciones = helpers.read_csv_data('app/json_data/ubicaciones.csv')
+    distribuidoras = helpers.read_csv_data('app/json_data/distribuidoras.csv')
+    gasolineras = helpers.read_csv_data('app/json_data/gasolineras.csv')
+    suministros_nuevos = helpers.read_csv_data('app/json_data/suministros_nuevos.csv')
+    suministros_actualizados = helpers.read_csv_data('app/json_data/suministros_actualizados.csv')
+
+    with session_scope() as session:
+        try:
+            insert_multiple_location_data_BD(session, ubicaciones)
+
+            with open('app/test/log.txt', 'a') as f:
+                        f.write("\n7" + '\n')
+            insert_multiple_distributor_data_BD(session, distribuidoras)
+            insert_multiple_gas_station_data_BD(session, gasolineras)
+            insert_multiple_supply_data_BD(session, suministros_nuevos)
+            update_supply_data_BD(session, suministros_actualizados)
+            session.commit()
+            flash ('Datos actualizados correctamente', 'success')
+        except Exception as e:
+            session.rollback()
+            flash('Ha habido un error al actualizar los datos', 'danger')
+            print(f"Error: {e}")
         finally:
             session.close()

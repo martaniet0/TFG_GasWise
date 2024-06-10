@@ -4,7 +4,7 @@ import app.views.database as db
 import json
 import requests
 
-from flask import Blueprint
+from flask import Blueprint, redirect, url_for, render_template
 from flask_login import login_required
 
 gas_bp = Blueprint('gas', __name__)
@@ -120,14 +120,89 @@ def insert_gas_station_supply_data():
     for station in stations_list:
         idApi = station["IDEESS"]
         id_distribuidora = db.get_distributor_ID(str(idApi))
-        i=1
         for combustible in gas_type.values():
             id_combustible = helpers.get_key(combustible, gas_type)
             precio = station["Precio {}".format(combustible)] if station["Precio {}".format(combustible)] != '' else 0.0
             if precio != 0.0:
                 db.insert_gas_station_supply_data_BD(id_distribuidora, id_combustible, precio)
-            i+=1
-                
+
+#Obtener los datos a insertar y actualizar en la base de datos
+def generate_sql_statements():
+    get_info_gas_stations()
+    data = open_file_gas_stations()
+    stations_list = data["ListaEESSPrecio"]
+
+    ubicaciones = []
+    distribuidoras = []
+    gasolineras = []
+    suministros_nuevos = []
+    suministros_actualizados = []
+
+    for station in stations_list:
+        idApi = station["IDEESS"]
+        id_distribuidora = db.get_distributor_ID(str(idApi))
+        latitud = station["Latitud"]
+        longitud = station["Longitud (WGS84)"]
+        location = db.get_location(latitud, longitud)
+        # Si no existe la distribuidora en la base de datos (es nueva)
+        if id_distribuidora is None and location is False:
+            with open('app/test/log.txt', 'a') as f:
+                f.write("\nENTRA" + '\n')
+            # Ubicacion
+            cp = station["C.P."]
+            direccion = station["Dirección"]
+            localidad = station["Localidad"]
+            municipio = station["Municipio"]
+            provincia = station["Provincia"]
+            ubicaciones.append([helpers.to_float(longitud), helpers.to_float(latitud), provincia, municipio, localidad, cp, direccion])
+
+            # Distribuidora
+            nombre = station["Rótulo"]
+            mail = None
+            tipo = "G"
+            nombre= station["R\u00f3tulo"]
+            mail = None
+            idAPI = station["IDEESS"]
+            tipo = "G"
+            distribuidoras.append([nombre, helpers.to_float(latitud), helpers.to_float(longitud), mail, idAPI, tipo])
+
+            # Gasolinera
+            if station["Tipo Venta"] == 'P':
+                tipo_venta = True
+            elif station["Tipo Venta"] == 'R':
+                tipo_venta = False
+            else:
+                tipo_venta = None
+            horario = station["Horario"]
+            margen = station["Margen"]
+
+            #En la insercción hay que buscar correspondencia entre idDistribuidora y idAPI
+            gasolineras.append([idAPI, tipo_venta, horario, margen])
+
+            # Suministro
+            for combustible in gas_type.values():
+                id_combustible = helpers.get_key(combustible, gas_type)
+                precio = station["Precio {}".format(combustible)] if station["Precio {}".format(combustible)] != '' else 0.0
+                if precio != 0.0:
+                    #En la insercción hay que buscar correspondencia entre idDistribuidora y idAPI
+                    suministros_nuevos.append([idAPI, id_combustible, precio])
+        #Si solo tenemos que actualizar el precio
+        else:
+            # Suministro
+            for combustible in gas_type.values():
+                id_combustible = helpers.get_key(combustible, gas_type)
+                precio = station["Precio {}".format(combustible)] if station["Precio {}".format(combustible)] != '' else 0.0
+                if precio != 0.0:
+                    #En la insercción hay que buscar correspondencia entre idDistribuidora y idAPI
+                    suministros_actualizados.append([id_distribuidora, id_combustible, precio])
+
+    # Escribir datos en archivos
+    helpers.write_to_file('app/json_data/ubicaciones.csv', ubicaciones)
+    helpers.write_to_file('app/json_data/distribuidoras.csv', distribuidoras)
+    helpers.write_to_file('app/json_data/gasolineras.csv', gasolineras)
+    helpers.write_to_file('app/json_data/suministros_nuevos.csv', suministros_nuevos)
+    helpers.write_to_file('app/json_data/suministros_actualizados.csv', suministros_actualizados)
+
 ############################################################################################################
 #RUTAS
 ############################################################################################################
@@ -139,13 +214,21 @@ def get_data_gas_stations():
     get_info_gas_stations()
 
 #Ruta para insertar los datos de las estaciones de servicio en la base de datos
-@gas_bp.route('/insert_EV_BD_station_data', methods=['GET'])
+@gas_bp.route('/insert_gas_station_data', methods=['GET'])
 @login_required
 def insert_gas_BD_station_data():
     insert_gas_station_location_data()
     insert_gas_station_distributor_data()
     insert_gas_station_data()
     insert_gas_station_supply_data()
+
+#Insertar los precios acutualizado y las nuevas distribuidoras en la base de datos
+@gas_bp.route('/update_gas_station_data', methods=['GET', 'POST'])
+@login_required
+def update_gas_stations_data():
+    generate_sql_statements()
+    db.update_gas_stations_data_BD()
+    return render_template('admin.html')
 
     
     
