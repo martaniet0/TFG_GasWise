@@ -210,12 +210,14 @@ def generate_sql_statements():
 #Ruta para obtener la información de una estación de servicio de la API del Ministerio de Industria, Energía y Turismo
 @gas_bp.route('/get_data_gas_stations', methods=['GET'])
 @login_required
+@helpers.admin_required
 def get_data_gas_stations():
     get_info_gas_stations()
 
 #Ruta para insertar los datos de las estaciones de servicio en la base de datos
 @gas_bp.route('/insert_gas_station_data', methods=['GET'])
 @login_required
+@helpers.admin_required
 def insert_gas_BD_station_data():
     insert_gas_station_location_data()
     insert_gas_station_distributor_data()
@@ -225,6 +227,7 @@ def insert_gas_BD_station_data():
 #Insertar los precios acutualizado y las nuevas distribuidoras en la base de datos
 @gas_bp.route('/update_gas_station_data', methods=['GET', 'POST'])
 @login_required
+@helpers.admin_required
 def update_gas_stations_data():
     generate_sql_statements()
     db.update_gas_stations_data_BD()

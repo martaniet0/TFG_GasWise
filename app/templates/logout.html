@@ -8,8 +8,20 @@
     <div class="extra-container">
         <div class="informational-container">
             <h1 id="title">¡Hasta pronto!</h1>
-            <p>Gracias por usar GasWise.</p>
+            <p>Gracias por usar GasWise. </p>
             <img src="{{ url_for('static', filename='img/bye.gif') }}" alt="Espere">
         </div>
     </div>
 {% endblock content %}
+
+{% block scripts %}
+<script>
+    // Detectar si el usuario intenta navegar hacia atrás
+    window.addEventListener('popstate', function(event) {
+        window.location.replace("{{ url_for('users.login') }}");
+    });
+
+    // Añadir una entrada al historial para que el botón de retroceso no vuelva a la página protegida
+    history.pushState(null, null, location.href)
+</script>
+{% endblock scripts %}

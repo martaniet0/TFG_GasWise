@@ -126,7 +126,10 @@ def login():
             tipo = "Administrador"
         if usuario and bcrypt.check_password_hash(usuario.Contrasenia, form.password.data):
             if tipo == "Propietario" and not usuario.Activo:
-                    return redirect(url_for('users.wait'))
+                return redirect(url_for('users.wait'))
+            if (tipo == "Conductor" and usuario.Eliminado) or (tipo == "Propietario" and usuario.Eliminado):
+                flash('¡Error! Tu cuenta ha sido eliminada.', 'danger')
+                return redirect(url_for('users.login'))
             login_user(usuario)
             if tipo == "Conductor":
                 return redirect(url_for('search.mapa'))
@@ -144,7 +147,7 @@ def logout():
     logout_user()
     return render_template('logout.html', title='¡Hasta pronto!')
 
-#Ruta para ver la información de un conductor o propietario
+#Ruta para ver/modificar la información de un conductor o propietario
 @users_bp.route("/account", methods=['GET', 'POST'])
 @login_required
 def account():

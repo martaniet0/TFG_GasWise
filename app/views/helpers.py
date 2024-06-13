@@ -1,5 +1,5 @@
 import json, csv, os
-from app.models import Conductor, Propietario
+from app.models import Conductor, Propietario, Administrador
 from flask_login import current_user, login_required
 from functools import wraps
 from flask import redirect, url_for, flash
@@ -28,7 +28,6 @@ def extract_usage_cost_EV():
             if "UsageCost" in elemento:
                 usage_cost = elemento["UsageCost"]
                 
-                # Asegúrate de que el costo de uso no esté vacío o nulo antes de agregarlo
                 if usage_cost and usage_cost not in usage_costs:
                     usage_costs.append(usage_cost)
 
@@ -102,3 +101,15 @@ def owner_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Decorator to check if the user is an admin
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.get_user_type() != "Administrador":
+            flash('Esa página solo es accesible para administradores.', 'warning')
+            if user_type() == "C":
+                return redirect(url_for('search.mapa'))
+            elif user_type() == "P":
+                return redirect(url_for('users.home_owner'))
+        return f(*args, **kwargs)
+    return decorated_function

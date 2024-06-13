@@ -29,6 +29,17 @@
         <h1 class="my-4">Actualizar datos</h1>
         <button class="btn btn-custome btn-secondary " id="update-button">Actualizar Datos Gasolineras</button>
     </div>
+    <div class="container">
+        <h1 class="my-4">Eliminar usuario</h1>
+        <form action="/admin/delete_user" method="post">
+            <div class="form-group">
+                <label for="email">Correo del usuario</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="Ingrese el correo del usuario" required>
+            </div>
+            <button type="submit" class="btn btn-danger mt-3">Eliminar</button>
+        </form>
+    </div>
+    
 {% endblock content %}
 
 {% block scripts %}

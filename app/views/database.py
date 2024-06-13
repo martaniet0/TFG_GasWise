@@ -247,7 +247,8 @@ def insert_driver_data_BD(mail, contrasenia, nombre, apellidos, tipo_vehiculo):
                 Contrasenia=contrasenia,
                 Nombre=nombre,
                 Apellidos=apellidos,
-                TipoVehiculo=tipo_vehiculo
+                TipoVehiculo=tipo_vehiculo, 
+                Eliminado=False
             )
             session.add(new_driver)
             session.commit()
@@ -275,7 +276,8 @@ def insert_owner_data_BD(mail, contrasenia, nombre, apellidos, documento, activo
                 Contrasenia=contrasenia,
                 Nombre=nombre,
                 Apellidos=apellidos,
-                Activo = activo
+                Activo = activo,
+                Eliminado=False
             )
             session.add(new_owner)
             session.commit()
@@ -1531,3 +1533,23 @@ def update_gas_stations_data_BD():
             print(f"Error: {e}")
         finally:
             session.close()
+
+#Eliminación lógica de un usuario
+def delete_user_BD(mail):
+    with session_scope() as session:
+        try:
+            user = session.query(Conductor).filter_by(MailConductor=mail).first()
+            if not user:
+                user = session.query(Propietario).filter_by(MailPropietario=mail).first()
+            if user:
+                with open('app/test/log.txt', 'w') as f:
+                    f.write("\n" + str(user))
+                user.Eliminado = True
+                user.Nombre = "Usuario desconocido"
+                with open('app/test/log.txt', 'w') as f:
+                    f.write("\n" + str(user))
+                session.commit()
+                return True
+        except IntegrityError:
+            session.rollback()
+    return False

@@ -39,6 +39,7 @@ class Conductor(db.Model, UserMixin):
     Nombre = Column(String(100), nullable=False)
     Apellidos = Column(String(100))
     TipoVehiculo = Column(String(1), nullable=False)
+    Eliminado = Column(Boolean)
 
     def get_id(self):
         return self.MailConductor
@@ -118,6 +119,7 @@ class Propietario(db.Model, UserMixin):
     Nombre = Column(String(100), nullable=False)
     Apellidos = Column(String(100))
     Activo = Column(Boolean, nullable=False)
+    Eliminado = Column(Boolean)
 
     def get_id(self):
         return self.MailPropietario
