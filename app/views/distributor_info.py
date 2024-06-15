@@ -89,7 +89,6 @@ def distributor_info(id=None):
         mail = current_user.MailConductor
         db.insert_rating(id_rating, rating, comment, mail)
         flash('Valoración enviada correctamente', 'success')
-        #redirect(url_for('distributor.distributor_info'))
 
 
     # Obtener latitud y longitud de los parámetros de la URL

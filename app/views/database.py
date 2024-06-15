@@ -824,46 +824,6 @@ def get_questions(lat, lon):
         return pregunta_list, respuesta_list
     
 #Obtener las valoraciones de una distribuidora
-def get_ratings2(lat, lon):
-    with session_scope() as session:
-        distribuidora_alias = aliased(Distribuidora)
-        subquery = (session.query(
-                        distribuidora_alias.IdDistribuidora,
-                        func.ST_Distance(
-                            distribuidora_alias.Location,
-                            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
-                        ).label('distance')
-                    )
-                    .order_by('distance')
-                    .limit(1)
-                    .subquery())
-        
-        valoraciones = (session.query(
-                        Valoracion.Puntuacion.label('puntuacion'),
-                        Valoracion.Texto.label('texto'),
-                        Valoracion.MailConductor.label('mail_valoracion')
-                    )
-                    .join(subquery, subquery.c.IdDistribuidora == Valoracion.IdDistribuidora)
-                    .all())
-        
-        valoracion_list = []
-        
-        for valoracion in valoraciones:
-            local_session = Session()
-            conductor_valoracion = local_session.query(Conductor).filter(Conductor.MailConductor == valoracion.mail_valoracion).first()
-            local_session.close()
-            nombre_completo_valoracion = f"{conductor_valoracion.Nombre} {conductor_valoracion.Apellidos}" if conductor_valoracion.Apellidos else f"{conductor_valoracion.Nombre}"
-            valoracion_list.append({
-                'puntuacion': valoracion.puntuacion,
-                'texto': valoracion.texto,
-                'nombre': nombre_completo_valoracion
-            })
-
-        valoracion_media = session.query(func.avg(Valoracion.Puntuacion)).filter(subquery.c.IdDistribuidora == Valoracion.IdDistribuidora).scalar()
-        valoracion_media = round(valoracion_media, 2) if valoracion_media else None
-
-        return valoracion_list, valoracion_media
-
 def get_ratings(lat, lon, sort_by='rating_desc'):
     with session_scope() as session:
         distribuidora_alias = aliased(Distribuidora)
@@ -1115,7 +1075,7 @@ def insert_db_answer(texto_respuesta, fecha_respuesta, hora_respuesta, verificad
             session.rollback()
 
 #Obtener las gasolineras que posee un conductor
-def get_gas_stations_owner():
+def get_stations_owner():
     with session_scope() as session:
         # Filtrar primero por distribuidoras que pertenecen al usuario actual y están verificadas
         distribuidoras_validadas = (session.query(PoseeDistribuidora.IdDistribuidora)
@@ -1155,7 +1115,34 @@ def get_gas_stations_owner():
                 'nombre': gasolinera.Nombre
 
             })
-        return gasolinera_list
+
+        estaciones_recarga = (session.query(
+                        EstacionRecarga.IdDistribuidora,
+                        EstacionRecarga.TipoVenta,
+                        EstacionRecarga.Precio,
+                        func.ST_Y(func.ST_GeomFromWKB(Distribuidora.Location)).label('latitud'),
+                        func.ST_X(func.ST_GeomFromWKB(Distribuidora.Location)).label('longitud'), 
+                        Distribuidora.Nombre,
+                        Distribuidora.MailPropietario
+                    )
+                    .join(Distribuidora, EstacionRecarga.IdDistribuidora == Distribuidora.IdDistribuidora)
+                    .join(distribuidoras_validadas, Distribuidora.IdDistribuidora == distribuidoras_validadas.c.IdDistribuidora)
+                    .all())
+        
+        recarga_list = []
+
+        for recarga in estaciones_recarga:
+            recarga_list.append({
+                'id_distribuidora': recarga.IdDistribuidora,
+                'tipo_venta': recarga.TipoVenta,
+                'precio': recarga.Precio,
+                'latitud': recarga.latitud,
+                'longitud': recarga.longitud,
+                'mail': recarga.MailPropietario,
+                'nombre': recarga.Nombre
+            })
+
+        return gasolinera_list, recarga_list
     
 #Insertar la información que ofrece un propietario cuando quiere añadir una nueva gasolinera
 def insert_db_property(doc):

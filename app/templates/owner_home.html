@@ -12,7 +12,7 @@
     <div class="container">
         <h1 class="my-4">Listado</h1>
         <ul class="list-group .list-group-flush .active">
-            {% for distributor in distributors %}
+            <!--{% for distributor in distributors %}
             <li class="list-group-item">
                 <h5><b>{{ distributor.nombre}}</b></h5>
                 <p><b>Email:</b> {{ distributor.mail }}</p>
@@ -28,9 +28,37 @@
 
                 <button class="btn btn-custome btn-outline-secondary" onclick="moreInfo('{{ distributor.latitud }}', '{{ distributor.longitud }}')">Más información</button>
             </li>
+            {% endfor %}-->
+            {% for station in gas_stations %}
+            <li class="list-group-item">
+                <h5><b>{{ station.nombre}}</b></h5>
+                <p><b>Email:</b> {{ station.mail }}</p>
+                {% if station.tipo_venta %}
+                <p><b>Tipo de venta:</b> {{ station.tipo_venta }}</p>
+                {% endif %}
+                {% if station.horario %}
+                <p><b>Horario:</b> {{ station.horario }}</p>
+                {% endif %}
+                {% if station.margen %}
+                <p><b>Margen:</b> {{ station.margen }}</p>
+                {% endif %}
+
+                <button class="btn btn-custome btn-outline-secondary" onclick="moreInfo('{{ station.latitud }}', '{{ station.longitud }}')">Más información</button>
+            </li>
+            {% endfor %}
+            {% for station in ev_stations %}
+            <li class="list-group-item">
+                <h5><b>{{ station.nombre}}</b></h5>
+                <p><b>Email:</b> {{ station.mail }}</p>
+                {% if station.tipo_venta %}
+                <p><b>Tipo de venta:</b> {{ station.tipo_venta }}</p>
+                {% endif %}
+
+                <button class="btn btn-custome btn-outline-secondary" onclick="moreInfo('{{ station.latitud }}', '{{ station.longitud }}')">Más información</button>   
+            </li>
             {% endfor %}
         </ul>
-        <button class="btn btn-custome btn-outline-secondary my-4" onclick="showForm()">+Añadir gasolinera</button>
+        <button class="btn btn-custome btn-outline-secondary my-4" onclick="showForm()">+Añadir propiedad</button>
     </div>
 
     <div id="form-overlay" class="form-overlay" style="display: none;">

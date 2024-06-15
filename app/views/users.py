@@ -182,9 +182,12 @@ def wait():
 @helpers.owner_required
 def home_owner():
     #Tengo que pasarle los distribuidores que tiene este owner
-    properties = database.get_gas_stations_owner()
+    gas_stations, ev_stations = database.get_stations_owner()
 
-    return render_template('owner_home.html', title='Home', distributors=properties)
+    for ev_station in ev_stations:
+        ev_station['tipo_venta'] = venta.get(ev_station['tipo_venta'], "-")
+
+    return render_template('owner_home.html', title='Home', gas_stations=gas_stations, ev_stations=ev_stations)
 
 #Ruta para que un propietario pueda añadir una propiedad
 @users_bp.route("/owner/add_property", methods=["GET", "POST"])
