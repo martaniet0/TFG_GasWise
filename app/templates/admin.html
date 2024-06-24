@@ -6,7 +6,7 @@
 
 {% block content %}
     <div class="container">
-        <h1 class="my-4">Gasolineras pendientes de verificación</h1>
+        <h1 class="my-4">Distribuidoras pendientes de verificación</h1>
         <ul class="list-group .list-group-flush .active">
             {% for distributor in distributors %}
             <li class="list-group-item">
@@ -63,7 +63,7 @@
             }
         }).then(response => {
             if (response.ok) {
-                alert('Actualización iniciada. La página estará inaccesible durante el proceso.');
+                alert('Actualización en la base de datos iniciada.');
             } else {
                 alert('Error al iniciar la actualización.');
             }

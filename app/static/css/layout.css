@@ -176,7 +176,12 @@ main {
     #font-logo{
         display: none;
     }
-
+    .letra{
+        width: 20%;
+    }
+    #header-btn2{
+        font-size:small;
+    }
 }
 
 /*Página de espera del propietario*/

@@ -2,7 +2,7 @@ import re
 
 from flask import flash
 
-from sqlalchemy import create_engine, text, select, func, cast, and_, insert, update
+from sqlalchemy import create_engine, text, select, func, cast, and_, insert, update, desc, asc
 from sqlalchemy.orm import sessionmaker, aliased, joinedload
 from contextlib import contextmanager
 from sqlalchemy.exc import IntegrityError
@@ -849,9 +849,9 @@ def get_ratings(lat, lon, sort_by='rating_desc'):
         elif sort_by == 'rating_asc':
             query = query.order_by(Valoracion.Puntuacion.asc())
         elif sort_by == 'comment_best':
-            query = query.order_by(Valoracion.ClasificacionTexto.desc())
+            query = query.order_by(desc(Valoracion.ClasificacionTexto).nulls_last())
         elif sort_by == 'comment_worst':
-            query = query.order_by(Valoracion.ClasificacionTexto.asc())
+            query = query.order_by(asc(Valoracion.ClasificacionTexto).nulls_last())
         
         valoraciones = query.all()
         
@@ -879,19 +879,22 @@ def insert_rating(id_distribuidora, puntuacion, texto, mail_conductor):
     with session_scope() as session:
         try: 
             # Analizar el sentimiento del texto
-            pipe = pipeline('sentiment-analysis', model='pysentimiento/robertuito-sentiment-analysis')
-            
-            resultado = pipe(texto)
-            clasificacion = resultado[0]['label']
-            
-            if clasificacion == 'NEG':
-                clasificacion_valor = -1
-            elif clasificacion == 'NEU':
-                clasificacion_valor = 0
-            elif clasificacion == 'POS':
-                clasificacion_valor = 1
+            if texto != '':
+                pipe = pipeline('sentiment-analysis', model='pysentimiento/robertuito-sentiment-analysis')
+                
+                resultado = pipe(texto)
+                clasificacion = resultado[0]['label']
+                
+                if clasificacion == 'NEG':
+                    clasificacion_valor = -1
+                elif clasificacion == 'NEU':
+                    clasificacion_valor = 0
+                elif clasificacion == 'POS':
+                    clasificacion_valor = 1
+                else:
+                    clasificacion_valor = None  
             else:
-                clasificacion_valor = None  
+                clasificacion_valor = None
 
             nueva_valoracion = Valoracion(
                 Puntuacion=puntuacion,
@@ -1243,8 +1246,6 @@ def insert_fav_distributor(distributor_id, mail):
                 IdDistribuidora=distributor_id,
                 MailConductor=mail
             )
-            with open ('app/test/log.txt', 'w') as file:
-                file.write("\n" + str(new_fav_distributor))
             session.add(new_fav_distributor)
             session.commit()
         except IntegrityError:
@@ -1505,9 +1506,6 @@ def update_gas_stations_data_BD():
     with session_scope() as session:
         try:
             insert_multiple_location_data_BD(session, ubicaciones)
-
-            with open('app/test/log.txt', 'a') as f:
-                        f.write("\n7" + '\n')
             insert_multiple_distributor_data_BD(session, distribuidoras)
             insert_multiple_gas_station_data_BD(session, gasolineras)
             insert_multiple_supply_data_BD(session, suministros_nuevos)

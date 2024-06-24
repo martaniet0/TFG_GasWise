@@ -214,8 +214,6 @@ def add_property():
 @helpers.driver_required
 def favorites():
     mail=current_user.MailConductor
-    with open('app/test/log3.txt', 'a') as f:
-        f.write(f'\n Mail: {mail}\n')
     distributors = database.get_fav_distributors(mail)
     for distributor in distributors:
         if distributor['tipo'] == 'G': 

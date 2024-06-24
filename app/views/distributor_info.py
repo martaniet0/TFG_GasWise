@@ -200,8 +200,6 @@ def answer():
 @distributor_bp.route('/add_fav/<int:distributor_id>', methods=['GET', 'POST'])
 @login_required
 def add_fav(distributor_id):
-    with open('app/test/log.txt', 'w') as f:
-        f.write(f'\n aquí llego, hola hola\n')
     mail = current_user.MailConductor
     db.insert_fav_distributor(distributor_id, mail)
     return redirect(url_for('distributor.distributor_info', id=distributor_id))
@@ -224,6 +222,4 @@ def is_fav(distributor_id):
         fav = "1"
     else:
         fav = "0"
-    with open('app/test/log.txt', 'w') as f:
-        f.write(f'\n fav: {fav}\n')
     return fav

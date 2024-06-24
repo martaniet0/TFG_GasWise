@@ -16,14 +16,14 @@
                 <label class="col-sm-4 col-form-label font-weight-bold">{{ value }}</label>
                 <div class="col-sm-8">
                     <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        <label class="btn btn-outline-secondary btn-custome">
+                        <label class="btn btn-custome btn-outline-secondary">
                             <input type="radio" name="{{ key }}" value="yes" autocomplete="off"> Sí
                         </label>
-                        <label class="btn btn-outline-secondary btn-custome">
+                        <label class="btn btn-custome btn-outline-secondary seleccion">
                             <input type="radio" name="{{ key }}" value="no" autocomplete="off"> No
                         </label>
                         {% if user_type == 'C' %}
-                        <label class="btn btn-outline-secondary btn-custome">
+                        <label class="btn btn-custome btn-outline-secondary">
                             <input type="radio" name="{{ key }}" value="unknown" autocomplete="off"> No sabe
                         </label>
                         {% endif %}
@@ -31,7 +31,7 @@
                 </div>
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-outline-secondary btn-custome">Enviar</button>
+            <button type="submit" class="btn btn-custome btn-outline-secondary">Enviar</button>
         </form>
     </div>
 {% endblock content %}

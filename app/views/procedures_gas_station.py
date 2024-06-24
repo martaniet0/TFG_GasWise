@@ -146,8 +146,6 @@ def generate_sql_statements():
         location = db.get_location(latitud, longitud)
         # Si no existe la distribuidora en la base de datos (es nueva)
         if id_distribuidora is None and location is False:
-            with open('app/test/log.txt', 'a') as f:
-                f.write("\nENTRA" + '\n')
             # Ubicacion
             cp = station["C.P."]
             direccion = station["Dirección"]
